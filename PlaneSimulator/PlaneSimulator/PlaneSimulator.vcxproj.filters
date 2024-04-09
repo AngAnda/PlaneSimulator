@@ -18,5 +18,27 @@
     <ClCompile Include="PlaneSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Class.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ShadowMapping.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ShadowMapping.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ShadowMappingDepth.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="ShadowMappingDepth.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Class.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
