@@ -26,8 +26,8 @@
 #pragma comment (lib, "OpenGL32.lib")
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1800;
+const unsigned int SCR_HEIGHT = 1600;
 
 unsigned int floorTexture;
 unsigned int cubeTexture;
@@ -150,8 +150,9 @@ int main(int argc, char** argv)
 
     // load textures
     // -------------
-    floorTexture = CreateTexture(strExePath + "\\Textures\\grass.png");
-    cubeTexture = CreateTexture(strExePath + "\\Textures\\cube.jpg");
+    //floorTexture = CreateTexture(strExePath + "Textures\\grass.jpg");
+    floorTexture = CreateTexture("Textures\\grass.jpg");
+    cubeTexture = CreateTexture("Textures\\bricks.jpg");
 
     // configure depth map FBO
     // -----------------------
@@ -224,6 +225,8 @@ int main(int argc, char** argv)
         // 1. render depth of scene to texture (from light's perspective)
         glm::mat4 lightProjection, lightView;
         glm::mat4 lightSpaceMatrix;
+        
+        // LUMINA
         float near_plane = 1.0f, far_plane = 7.5f;
         lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
         lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
@@ -297,7 +300,7 @@ void renderScene(const Shader& shader)
     model = glm::scale(model, glm::vec3(0.35f));
     shader.SetMat4("model", model);
     glActiveTexture(GL_TEXTURE0); // Activează unitatea de textură 0 pentru podea
-    glBindTexture(GL_TEXTURE_2D, floorTexture); // Leagă textura podelei
+    glBindTexture(GL_TEXTURE_2D, cubeTexture); // LEAGA TEXTURA LA CUB NU STERGE
     renderCube(cubeTexture);
 
 
