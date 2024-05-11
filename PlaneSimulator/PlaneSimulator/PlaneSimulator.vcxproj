@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>..\..\_external\glfw-3.4.bin.WIN64\include\GLFW;..\..\_external\glew-2.2.0\include;..\..\_external\glm;..\..\_external\stbimage;$(IncludePath)</IncludePath>
-    <LibraryPath>..\..\_external\glew-2.2.0\lib\Release\x64;..\..\_external\glfw-3.4.bin.WIN64\lib-vc2022;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\_external\glfw-3.4.bin.WIN64\include\GLFW;..\..\_external\glew-2.2.0\include;..\..\_external\glm;..\..\_external\stbimage;..\..\_external\assimp\x64-windows-dbg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\_external\glew-2.2.0\lib\Release\x64;..\..\_external\glfw-3.4.bin.WIN64\lib-vc2022;..\..\_external\assimp\x64-windows-dbg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -131,7 +131,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="PlaneSimulator.cpp" />
+    <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ShadowMapping.fs">
@@ -149,7 +152,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
