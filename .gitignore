@@ -405,3 +405,11 @@ FodyWeavers.xsd
 # For Opengl project
 !_external/
 !_external/*
+
+# Exclude the entire Assimp directory inside _external
+/_external/assimp/
+
+# Alternatively, ignore specific types of files within the Assimp directory inside _external
+/_external/assimp/*.obj
+/_external/assimp/*.bin
+/_external/assimp/temp/

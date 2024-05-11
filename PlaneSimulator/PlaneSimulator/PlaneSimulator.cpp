@@ -31,6 +31,7 @@
 const unsigned int SCR_WIDTH = 1800;
 const unsigned int SCR_HEIGHT = 1200;
 
+
 enum ECameraMovementType
 {
 	UNKNOWN,
@@ -42,16 +43,39 @@ enum ECameraMovementType
 	DOWN
 };
 
-float skyboxVertices[] = {
-	// Coordonatele vertex-urilor pentru un cub
-	-100.0f,  100.0f, -100.0f,
-	-100.0f, -100.0f, -100.0f,
-	 100.0f, -100.0f, -100.0f,
-	 100.0f, -100.0f, -100.0f,
-	 100.0f,  100.0f, -100.0f,
-	-100.0f,  100.0f, -100.0f,
+float skyboxVertices[] =
+{
+	//   Coordinates
+	-1.0f, -1.0f,  1.0f,//        7--------6
+	 1.0f, -1.0f,  1.0f,//       /|       /|
+	 1.0f, -1.0f, -1.0f,//      4--------5 |
+	-1.0f, -1.0f, -1.0f,//      | |      | |
+	-1.0f,  1.0f,  1.0f,//      | 3------|-2
+	 1.0f,  1.0f,  1.0f,//      |/       |/
+	 1.0f,  1.0f, -1.0f,//      0--------1
+	-1.0f,  1.0f, -1.0f
+};
 
-	// ... restul coordonatelor pentru celelalte fațete
+unsigned int skyboxIndices[] =
+{
+	// Right
+	1, 2, 6,
+	6, 5, 1,
+	// Left
+	0, 4, 7,
+	7, 3, 0,
+	// Top
+	4, 5, 6,
+	6, 7, 4,
+	// Bottom
+	0, 3, 2,
+	2, 1, 0,
+	// Back
+	0, 1, 5,
+	5, 4, 0,
+	// Front
+	3, 7, 6,
+	6, 2, 3
 };
 
 float planeVertices[] = {
@@ -99,6 +123,29 @@ GLuint loadCubemap(std::vector<std::string> faces) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+	return textureID;
+}
+
+unsigned int LoadSkybox(std::vector<std::string> faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	int width, height, nrChannels;
+	for (unsigned int i{ 0 }; i < faces.size(); ++i)
+	{
+		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+		stbi_image_free(data);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	return textureID;
 }
 
@@ -456,7 +503,7 @@ int main()
 	stbi_image_free(data);
 
 	// Crearea și configurarea bufferelor vertex și array pentru plan
-	unsigned int planeVBO, planeVAO;
+	/*unsigned int planeVBO, planeVAO;
 	glGenVertexArrays(1, &planeVAO);
 	glGenBuffers(1, &planeVBO);
 	glBindVertexArray(planeVAO);
@@ -466,17 +513,25 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
+	glBindVertexArray(0);*/
 
 
-	GLuint skyboxVAO, skyboxVBO;
+	//GLuint skyboxVAO, skyboxVBO, skyboxEBO;
+	// Create VAO, VBO, and EBO for the skybox
+	unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
 	glGenVertexArrays(1, &skyboxVAO);
 	glGenBuffers(1, &skyboxVBO);
+	glGenBuffers(1, &skyboxEBO);
 	glBindVertexArray(skyboxVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	// Definirea și încărcarea shaderului pentru textura de iarbă
 	//Shader textureShader("path/to/vertex_shader.vs", "path/to/fragment_shader.fs");
@@ -498,10 +553,26 @@ int main()
 
 	Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
+	Shader skyboxShader((currentPath + "\\PlaneSimulator\\skybox.vs").c_str(), (currentPath + "\\PlaneSimulator\\skybox.fs").c_str());
 
 	// Load object model
 	std::string objFileName = (currentPath + "\\Models\\CylinderProject.obj");
 	Model objModel(objFileName, false);
+
+	//Load skybox model 
+	std::string skyBoxPath = currentPath + "\\Models\\skybox\\";
+
+	std::vector<std::string> facesCubemap =
+	{
+		skyBoxPath + "px.png",
+		skyBoxPath + "nx.png",
+		skyBoxPath + "py.png",
+		skyBoxPath + "ny.png",
+		skyBoxPath + "pz.png",
+		skyBoxPath + "nz.png"
+	};
+
+	unsigned int cubemapTexture = LoadSkybox(facesCubemap);
 
 	// Load airplane model
 	std::string airplaneObjFileName = (currentPath + "\\Models\\Airplane\\airplane.obj");
@@ -554,16 +625,16 @@ int main()
 		lightingShader.setMat4("view", view);
 
 		// Render plane
-		glBindVertexArray(planeVAO);
+		/*glBindVertexArray(planeVAO);
 		glm::mat4 planeModel = glm::mat4(1.0);
 		lightingShader.setMat4("model", planeModel);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
-		
+
 		// Render airplane model
 		glm::mat4 airplaneModel = glm::mat4(1.0);
 		airplaneModel = glm::translate(airplaneModel, cameraPosition + glm::vec3(0.0f, -0.4f, -2.0f)); // Adjust to ensure it's within the camera view
-		airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f)); 
+		airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
 		airplaneModel = glm::rotate(airplaneModel, glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Adjust rotation if needed
 
 		lightingShader.setMat4("model", airplaneModel);
@@ -577,6 +648,25 @@ int main()
 		lightModel = glm::scale(lightModel, glm::vec3(0.1f));  // Smaller cube for the light
 		lampShader.setMat4("model", lightModel);
 
+		//render skybox
+		glDepthFunc(GL_LEQUAL);
+		glUseProgram(skyboxShader.ID);
+		projection = pCamera->GetProjectionMatrix();
+		view = glm::mat4(glm::mat3(pCamera->GetViewMatrix()));
+		skyboxShader.setMat4("projection", projection);
+		skyboxShader.setMat4("view", view);
+
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS);
+
+
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -589,6 +679,8 @@ int main()
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &lightVAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &skyboxVAO);
+	glDeleteBuffers(1, &skyboxVBO);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources
 	glfwTerminate();
@@ -640,3 +732,5 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yOffset)
 {
 	pCamera->ProcessMouseScroll((float)yOffset);
 }
+
+
