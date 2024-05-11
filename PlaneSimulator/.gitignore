@@ -80,6 +80,8 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+!models/*.obj
+!models/*/*.obj
 *.iobj
 *.pch
 *.pdb
@@ -405,3 +407,4 @@ FodyWeavers.xsd
 # For Opengl project
 !_external/
 !_external/*
+
