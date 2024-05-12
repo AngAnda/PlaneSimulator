@@ -360,6 +360,9 @@
 			return forward;
 		}
 
+		glm::vec3 GetUp() const { return up; }
+
+
 
 		void StartFlying() {
 			isFlying = true;
@@ -433,8 +436,11 @@
 
 			// Apply roll rotation around the forward axis
 			glm::mat4 rollMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(roll), forward);
-			right = glm::vec3(rollMatrix * glm::vec4(newRight, 0.0f));
-			up = glm::vec3(rollMatrix * glm::vec4(up, 0.0f));
+			//right = glm::vec3(rollMatrix * glm::vec4(newRight, 0.0f));
+			//up = glm::vec3(rollMatrix * glm::vec4(up, 0.0f));
+			right = glm::normalize(glm::cross(forward, worldUp));
+			up = glm::normalize(glm::cross(right, forward));
+
 		}
 
 	protected:
@@ -634,6 +640,35 @@
 		glBindVertexArray(0);
 
 
+		// Crearea și configurarea bufferelor vertex și array pentru tower
+		unsigned int towerVBO, towerVAO;
+		glGenVertexArrays(1, &towerVAO);
+		glGenBuffers(1, &towerVBO);
+		glBindVertexArray(towerVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, towerVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		glBindVertexArray(0);
+
+		// Crearea și configurarea bufferelor vertex și array pentru map
+		unsigned int mapVBO, mapVAO;
+		glGenVertexArrays(1, &mapVAO);
+		glGenBuffers(1, &mapVBO);
+		glBindVertexArray(mapVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, mapVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+		glBindVertexArray(0);
+		/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
+
+
 		//GLuint skyboxVAO, skyboxVBO, skyboxEBO;
 		// Create VAO, VBO, and EBO for the skybox
 		unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
@@ -699,6 +734,21 @@
 		if (!airplaneObjModel.meshes.size()) {
 			std::cerr << "Failed to load airplane model: " << airplaneObjFileName << std::endl;
 		}
+
+		// Load tower model
+		std::string towerObjFileName = (currentPath + "\\Models\\Tower\\Tower_Control.obj");
+		Model towerObjModel(towerObjFileName, false);
+		if (!towerObjModel.meshes.size()) {
+			std::cerr << "Failed to load tower model: " << towerObjFileName << std::endl;
+		}
+
+		// Load map model
+		std::string mapObjFileName = (currentPath + "\\Models\\Map\\Map.obj");
+		Model mapObjModel(mapObjFileName, false);
+		if (!mapObjModel.meshes.size()) {
+			std::cerr << "Failed to load map model: " << mapObjFileName << std::endl;
+		}
+
 		//// Load pirat model
 		//std::string piratObjFileName = (currentPath + "\\Models\\Pirat\\Pirat.obj");
 		//Model piratObjModel(piratObjFileName, false);
@@ -760,17 +810,23 @@
 			glBindVertexArray(planeVAO);
 			glm::mat4 planeModel = glm::mat4(1.0);
 			lightingShader.setMat4("model", planeModel);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			//glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
-			// Render airplane model
-			//glm::mat4 airplaneModel = glm::mat4(1.0);
-			//airplaneModel = glm::translate(airplaneModel, cameraPosition + glm::vec3(0.0f, -0.4f, -2.0f)); // Adjust to ensure it's within the camera view
-			//airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
-			//airplaneModel = glm::rotate(airplaneModel, glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Adjust rotation if needed
 
-			//lightingShader.setMat4("model", airplaneModel);
-			//airplaneObjModel.Draw(lightingShader);
+			// render map
+			glm::mat4 mapModel = glm::mat4(1.0f);
+			mapModel = glm::translate(mapModel, initialPosition - glm::vec3(0, 120.0f, 0));
+			mapModel = glm::scale(mapModel, glm::vec3(0.1f));
+			lightingShader.setMat4("model", mapModel);
+			mapObjModel.Draw(lightingShader);
+
+			// Render tower model
+			glm::mat4 towerModel = glm::mat4(1.0);
+			towerModel = glm::translate(towerModel, initialPosition + glm::vec3(-2.0f, -2.0f, -15));
+			towerModel = glm::scale(towerModel, glm::vec3(0.1f));
+			lightingShader.setMat4("model", towerModel);
+			towerObjModel.Draw(lightingShader);
 
 			// Render airplane model
 			glm::mat4 airplaneModel = glm::mat4(1.0);
@@ -779,13 +835,32 @@
 			float rollAngle = pCamera->GetRoll();
 			float pitchAngle = pCamera->GetPitch();
 			float yawAngle = pCamera->GetYaw();
+			//glm::vec3 cameraForward = pCamera->GetForward();
+			glm::vec3 cameraUp = pCamera->GetUp();
 
-			airplaneModel = glm::translate(airplaneModel, pCamera->GetPosition() + glm::vec3(0.0f, -0.4f, -2.0f));
+
+			/*airplaneModel = glm::translate(airplaneModel, pCamera->GetPosition() + glm::vec3(0.0f, -0.3f, -1.0f));
 			airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
+*/
+			glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
+			airplaneModel = glm::translate(airplaneModel, airplanePosition);
+
+			// Orientează avionul să fie perpendicular pe direcția de vizualizare a camerei
+			glm::vec3 right = glm::normalize(glm::cross(cameraUp, cameraForward));
+			glm::vec3 upward = glm::normalize(glm::cross(cameraForward, right));
+
+			airplaneModel[0] = glm::vec4(-right, 0.0f);
+			airplaneModel[1] = glm::vec4(upward, 0.0f);
+			airplaneModel[2] = glm::vec4(-cameraForward, 0.0f); // Inversăm forward pentru a orienta avionul spre cameră
+			airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
+			
 
 			airplaneModel = glm::rotate(airplaneModel, glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-			airplaneModel = glm::rotate(airplaneModel, glm::radians(-rollAngle), glm::vec3(0.0f, 0.0f, 1.0f));
-			airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetYaw()-270), glm::vec3(0.0f, 0.0f, -1.0f)); 
+			//airplaneModel = glm::rotate(airplaneModel, glm::radians(-rollAngle), glm::vec3(0.0f, 0.0f, 2.0f));
+			airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetPitch() + 10), glm::vec3(1.0f, 0.0f, 0.0f));
+			//airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetYaw()-270), glm::vec3(0.0f, 0.0f, -1.0f)); 
+		
+			//airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetYaw()-90), glm::vec3(0.0f, 0.0f, -1.0f)); 
 
 			lightingShader.setMat4("model", airplaneModel);
 			airplaneObjModel.Draw(lightingShader);
@@ -806,6 +881,9 @@
 			view = glm::mat4(glm::mat3(pCamera->GetViewMatrix()));
 			skyboxShader.setMat4("projection", projection);
 			skyboxShader.setMat4("view", view);
+
+
+
 
 			glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
