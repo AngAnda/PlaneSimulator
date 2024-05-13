@@ -50,13 +50,13 @@
 	float skyboxVertices[] =
 	{
 		//   Coordinates
-		-1.0f, -1.0f,  1.0f,//        7--------6
-		 1.0f, -1.0f,  1.0f,//       /|       /|
-		 1.0f, -1.0f, -1.0f,//      4--------5 |
-		-1.0f, -1.0f, -1.0f,//      | |      | |
-		-1.0f,  1.0f,  1.0f,//      | 3------|-2
-		 1.0f,  1.0f,  1.0f,//      |/       |/
-		 1.0f,  1.0f, -1.0f,//      0--------1
+		-1.0f, -1.0f,  1.0f,     
+		 1.0f, -1.0f,  1.0f,      
+		 1.0f, -1.0f, -1.0f,      
+		-1.0f, -1.0f, -1.0f,      
+		-1.0f,  1.0f,  1.0f,      
+		 1.0f,  1.0f,  1.0f,      
+		 1.0f,  1.0f, -1.0f,     
 		-1.0f,  1.0f, -1.0f
 	};
 
@@ -128,6 +128,40 @@
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 		return textureID;
+	}
+
+	unsigned int CreateTexture(const std::string& strTexturePath)
+	{
+		unsigned int textureId = -1;
+
+		int width, height, nrChannels;
+		unsigned char* data = stbi_load(strTexturePath.c_str(), &width, &height, &nrChannels, 0);
+		if (data) {
+			GLenum format;
+			if (nrChannels == 1)
+				format = GL_RED;
+			else if (nrChannels == 3)
+				format = GL_RGB;
+			else if (nrChannels == 4)
+				format = GL_RGBA;
+
+			glGenTextures(1, &textureId);
+			glBindTexture(GL_TEXTURE_2D, textureId);
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else {
+			std::cout << "Failed to load texture: " << strTexturePath << std::endl;
+		}
+		stbi_image_free(data);
+
+		return textureId;
 	}
 
 	unsigned int LoadSkybox(std::vector<std::string> faces)
@@ -708,12 +742,13 @@
 		Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
 		Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
 		Shader skyboxShader((currentPath + "\\PlaneSimulator\\skybox.vs").c_str(), (currentPath + "\\PlaneSimulator\\skybox.fs").c_str());
+		Shader terrainShader((currentPath + "\\PlaneSimulator\\skybox.vs").c_str(), (currentPath + "\\PlaneSimulator\\skybox.fs").c_str());
 
 		// Load object model
 		std::string objFileName = (currentPath + "\\Models\\CylinderProject.obj");
 		Model objModel(objFileName, false);
 
-		//Load skybox model 
+		//Load skybox 
 		std::string skyBoxPath = currentPath + "\\Models\\skybox\\";
 
 		std::vector<std::string> facesCubemap =
@@ -748,6 +783,8 @@
 		if (!mapObjModel.meshes.size()) {
 			std::cerr << "Failed to load map model: " << mapObjFileName << std::endl;
 		}
+
+		int floorTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
 		//// Load pirat model
 		//std::string piratObjFileName = (currentPath + "\\Models\\Pirat\\Pirat.obj");
@@ -806,6 +843,7 @@
 			lightingShader.setMat4("projection", projection);
 			lightingShader.setMat4("view", view);
 
+
 			// Render plane
 			glBindVertexArray(planeVAO);
 			glm::mat4 planeModel = glm::mat4(1.0);
@@ -820,6 +858,7 @@
 			mapModel = glm::scale(mapModel, glm::vec3(0.1f));
 			lightingShader.setMat4("model", mapModel);
 			mapObjModel.Draw(lightingShader);
+
 
 			// Render tower model
 			glm::mat4 towerModel = glm::mat4(1.0);
@@ -881,9 +920,6 @@
 			view = glm::mat4(glm::mat3(pCamera->GetViewMatrix()));
 			skyboxShader.setMat4("projection", projection);
 			skyboxShader.setMat4("view", view);
-
-
-
 
 			glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
 			glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));

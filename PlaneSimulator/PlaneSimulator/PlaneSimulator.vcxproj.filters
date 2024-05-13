@@ -47,6 +47,12 @@
     <None Include="skybox.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="terrain.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="terrain.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
