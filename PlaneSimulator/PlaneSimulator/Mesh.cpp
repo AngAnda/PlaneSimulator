@@ -1,144 +1,109 @@
 #include "Mesh.h"
 
-Mesh::Mesh(const vector<Vertex>& vertices, const vector<unsigned int>& indices, const vector<Texture>& textures)
+Mesh::Mesh(std::string OBJfile, std::string PathFile)
 {
-	std::cout << "start mesh constructor " << std::endl;
-
-	std::cout << "reserve vertices " << std::endl;
-	numVertices = vertices.size();
-	this->vertices.reset(new Vertex[numVertices]);
-
-	std::cout << "start copy vertices " << std::endl;
-	for (size_t i = 0; i < vertices.size(); ++i) {
-		this->vertices.get()[i] = vertices[i];
-	}
-
-	std::cout << "reserve indices " << std::endl;
-	numIndexes = indices.size();
-	this->indices.reset(new unsigned int[numIndexes]);
-
-	std::cout << "start copy indices " << std::endl;
-	for (size_t i = 0; i < indices.size(); ++i) {
-		this->indices.get()[i] = indices[i];
-	}
-
-	std::cout << "start copy textures " << std::endl;
-	this->textures = textures;
-
-	// now that we have all the required data, set the vertex buffers and its attribute pointers.
-	setupMesh();
-
-	std::cout << "end mesh constructor " << std::endl;
+	this->position = glm::vec3(0.f);
+	this->rotation = glm::vec3(0.f);
+	this->scale = glm::vec3(5.0f);
+	std::pair <std::vector<Vertex>, std::vector<Material>> files = loadOBJ(OBJfile.c_str(), PathFile);
+	this->vertices = files.first;
+	this->materials = files.second;
+	//initVAO();
+	initMaterials();
+	updateModelMatrix();
 }
 
-Mesh::Mesh(unsigned int numVertices, std::shared_ptr <Vertex> vertices, unsigned int numIndexes, std::shared_ptr <unsigned int> indices, const vector<Texture>& textures)
+Mesh::~Mesh()
 {
-	std::cout << "start mesh constructor. num vertice = " << numVertices << " num indexes " << numIndexes << std::endl;
-
-	this->numVertices = numVertices;
-	this->vertices = vertices;
-
-	this->numIndexes = numIndexes;
-	this->indices = indices;
-
-	this->textures = textures;
-
-	// now that we have all the required data, set the vertex buffers and its attribute pointers.
-	setupMesh();
-
-	std::cout << "end mesh constructor " << std::endl;
+	glDeleteVertexArrays(1, &this->VAO);
+	glDeleteBuffers(1, &this->VBO);
+	glDeleteBuffers(2, &this->EBO);
 }
 
-// render the mesh
-void Mesh::Draw(Shader& shader)
+void Mesh::initVertexData(Vertex* vertexArray, const unsigned& nrOfVertices, GLuint* indexArray, const unsigned& nrOfIndices)
 {
-	//std::cout << "start drawing " << std::endl;
-
-	// bind appropriate textures
-	unsigned int diffuseNr = 1;
-	unsigned int specularNr = 1;
-	unsigned int normalNr = 1;
-	unsigned int heightNr = 1;
-	for (unsigned int i = 0; i < textures.size(); i++)
+	for (size_t i = 0; i < nrOfVertices; i++)
 	{
-		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
-		// retrieve texture number (the N in diffuse_textureN)
-		string number;
-		string name = textures[i].type;
-		if (name == "texture_diffuse")
-			number = std::to_string(diffuseNr++);
-		else if (name == "texture_specular")
-			number = std::to_string(specularNr++); // transfer unsigned int to string
-		else if (name == "texture_normal")
-			number = std::to_string(normalNr++); // transfer unsigned int to string
-		else if (name == "texture_height")
-			number = std::to_string(heightNr++); // transfer unsigned int to string
-
-		// now set the sampler to the correct texture unit
-		glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
-		// and finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		this->vertices.push_back(vertexArray[i]);
 	}
-	
 
-	// draw mesh
-	glBindVertexArray(VAO);
-
-
-	//std::cout << "draw triangles: " << numIndexes << std::endl;
-	glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(numIndexes), GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
-
-	// always good practice to set everything back to defaults once configured.
-	glActiveTexture(GL_TEXTURE0);
-	//std::cout << "end drawing " << std::endl;
+	for (size_t i = 0; i < nrOfIndices; i++)
+	{
+		this->indices.push_back(indexArray[i]);
+	}
 }
 
-// initializes all the buffer objects/arrays
-void Mesh::setupMesh()
+void Mesh::updateModelMatrix()
 {
-	std::cout << "start to setup mesh " << std::endl;
-	// create buffers/arrays
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-	// load data into vertex buffers
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// A great thing about structs is that their memory layout is sequential for all its items.
-	// The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
-	// again translates to 3/2 floats which translates to a byte array.
-	glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), &vertices.get()[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndexes * sizeof(unsigned int), &indices.get()[0], GL_STATIC_DRAW);
-
-	// set the vertex attribute pointers
-	// vertex Positions
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
-	// vertex normals
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-	//// vertex texture coords
-	//glEnableVertexAttribArray(2);
-	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
-	//// vertex tangent
-	//glEnableVertexAttribArray(3);
-	//glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
-	//// vertex bitangent
-	//glEnableVertexAttribArray(4);
-	//glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
-	//// ids
-	//glEnableVertexAttribArray(5);
-	//glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
-
-	//// weights
-	//glEnableVertexAttribArray(6);
-	//glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
-	glBindVertexArray(0);
-
-	std::cout << "end to setup mesh " << std::endl;
+	this->ModelMatrix = glm::mat4(1.f);
+	this->ModelMatrix = glm::translate(this->ModelMatrix, this->position);
+	this->ModelMatrix = glm::rotate(this->ModelMatrix, glm::radians(this->rotation.x), glm::vec3(1.f, 0.f, 0.f));
+	this->ModelMatrix = glm::rotate(this->ModelMatrix, glm::radians(this->rotation.z), glm::vec3(0.f, 0.f, 1.f));
+	this->ModelMatrix = glm::rotate(this->ModelMatrix, glm::radians(this->rotation.y), glm::vec3(0.f, 1.f, 0.f));
+	this->ModelMatrix = glm::scale(this->ModelMatrix, this->scale);
 }
 
+
+void Mesh::initMaterials()
+{
+	for (int i = 0; i < materials.size(); i++)
+	{
+		for (int j = 0; j < vertices.size(); j++)
+		{
+			if (vertices[j].colorID == i)
+			{
+				vertices[j].ambient = materials[i].ambient;
+				vertices[j].diffuse = materials[i].diffuse;
+				vertices[j].specular = materials[i].specular;
+			}
+		}
+	}
+}
+
+
+void Mesh::initVAO()
+{
+	//Create VAO
+	glGenVertexArrays(1, &this->VAO);
+	glBindVertexArray(this->VAO);
+
+	//Gen VBO and bind and send data
+	glGenBuffers(1, &this->VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+	// Gen EBO and bind and send data
+	if (this->indices.size() > 0)
+	{
+		glGenBuffers(1, &this->EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->indices.size() * sizeof(GLuint), this->indices.data(), GL_STATIC_DRAW);
+	}
+
+	//Set VertexAtributesPoints and enable (input assembly)
+	//Position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::position));
+	glEnableVertexAttribArray(0);
+	//Color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::color));
+	glEnableVertexAttribArray(1);
+	//Texcoord
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::texcoord));
+	glEnableVertexAttribArray(2);
+	//Normal
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::normal));
+	glEnableVertexAttribArray(3);
+	//Ambient
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::ambient));
+	glEnableVertexAttribArray(4);
+	//Diffuse
+	glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::diffuse));
+	glEnableVertexAttribArray(5);
+	//Specular
+	glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Vertex::specular));
+	glEnableVertexAttribArray(6);
+
+	//BIND VAO 0
+	glBindVertexArray(0);
+
+}
