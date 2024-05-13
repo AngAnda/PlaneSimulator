@@ -53,6 +53,12 @@
     <None Include="terrain.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="default.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="default.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -71,6 +77,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Loaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

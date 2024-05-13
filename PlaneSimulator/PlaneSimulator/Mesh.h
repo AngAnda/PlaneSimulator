@@ -5,20 +5,12 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Vertex.h"
+#include "Loaders.h"
 
 #include <string>
 #include <vector>
 
 using namespace std;
-
-struct Material
-{
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-	GLint diffuseTex;
-	GLint speculatTex;
-};
 
 class Mesh
 {
@@ -42,7 +34,6 @@ private:
 public:
 	Mesh(std::string OBJfile, std::string PathFile);
 	~Mesh();
-	void update();
 	void initVAO();
 	void render(Shader* shader);
 	void setPosition(glm::vec3 position);
