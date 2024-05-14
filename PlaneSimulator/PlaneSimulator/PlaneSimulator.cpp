@@ -21,6 +21,7 @@
 #include <vector>
 #include "Shader.h"
 #include "Mesh.h"
+#include "Model.h"
 
 #pragma comment (lib, "glfw3dll.lib")
 #pragma comment (lib, "glew32.lib")
@@ -107,6 +108,11 @@ std::vector<std::string> faces{
 	"path/to/py.jpg",
 	"path/to/pz.jpg"
 };
+
+void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, float rotationAngle, const glm::vec3& scale);
+void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale);
+void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& position, const glm::vec3& scale, int terrainTexture);
+
 
 GLuint loadCubemap(std::vector<std::string> faces) {
 	GLuint textureID;
@@ -442,9 +448,7 @@ private:
 		yaw += xOffset;
 		pitch += yOffset;
 
-		//std::cout << "yaw = " << yaw << std::endl;
-		//std::cout << "pitch = " << pitch << std::endl;
-
+		
 		// Avem grijã sã nu ne dãm peste cap
 		if (constrainPitch) {
 			if (pitch > 89.0f)
@@ -465,10 +469,7 @@ private:
 		this->forward.y = sin(glm::radians(pitch));
 		this->forward.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 		this->forward = glm::normalize(this->forward);
-		// Also re-calculate the Right and Up vector
-		//right = glm::normalize(glm::cross(forward, worldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		//up = glm::normalize(glm::cross(right, forward));
-
+		
 
 		// Calculate new Right and Up vectors
 		glm::vec3 newRight = glm::normalize(glm::cross(forward, worldUp));  // Adjust right vector
@@ -476,8 +477,6 @@ private:
 
 		// Apply roll rotation around the forward axis
 		glm::mat4 rollMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(roll), forward);
-		//right = glm::vec3(rollMatrix * glm::vec4(newRight, 0.0f));
-		//up = glm::vec3(rollMatrix * glm::vec4(up, 0.0f));
 		right = glm::normalize(glm::cross(forward, worldUp));
 		up = glm::normalize(glm::cross(right, forward));
 
@@ -496,9 +495,9 @@ protected:
 	int height;
 	bool isPerspective;
 	float roll = 0.0f;  // Roll angle in degrees
-	float speed = 0.2f;       // Viteza curentă a avionului
+	float speed = 0.01f;       // Viteza curentă a avionului
 	float acceleration = 0.01f; // Accelerarea avionului
-	float maxSpeed = 0.02f;     // Viteza maximă
+	float maxSpeed = 0.2f;     // Viteza maximă
 	float minSpeed = 0.0f;     // Viteza minimă, poate fi zero pentru a opri complet
 	bool isFlying = false;     // Dacă avionul este în aer sau nu
 	float pitchIncrement = 0.1f;
@@ -540,6 +539,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 	}
 }
+
+Model airplane, tower, skybox, terrain;
 
 int main()
 {
@@ -667,8 +668,8 @@ int main()
 	stbi_image_free(data);
 
 	// Crearea și configurarea bufferelor vertex și array pentru plan
-	unsigned int planeVBO, planeVAO;
-	glGenVertexArrays(1, &planeVAO);
+	//unsigned int planeVBO, planeVAO;
+	/*glGenVertexArrays(1, &planeVAO);
 	glGenBuffers(1, &planeVBO);
 	glBindVertexArray(planeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
@@ -677,11 +678,11 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
+	glBindVertexArray(0);*/
 
 
 	// Crearea și configurarea bufferelor vertex și array pentru tower
-	unsigned int towerVBO, towerVAO;
+	/*unsigned int towerVBO, towerVAO;
 	glGenVertexArrays(1, &towerVAO);
 	glGenBuffers(1, &towerVBO);
 	glBindVertexArray(towerVAO);
@@ -691,10 +692,10 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
+	glBindVertexArray(0);*/
 
 	// Crearea și configurarea bufferelor vertex și array pentru map
-	unsigned int mapVBO, mapVAO;
+	/*unsigned int mapVBO, mapVAO;
 	glGenVertexArrays(1, &mapVAO);
 	glGenBuffers(1, &mapVBO);
 	glBindVertexArray(mapVAO);
@@ -704,7 +705,7 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
+	glBindVertexArray(0);*/
 	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
 
@@ -726,13 +727,11 @@ int main()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	// Definirea și încărcarea shaderului pentru textura de iarbă
-	//Shader textureShader("path/to/vertex_shader.vs", "path/to/fragment_shader.fs");
-
-	glm::vec3 initialPosition(0.0f, 0.0f, 100.0f);
+	
+	glm::vec3 initialPosition(0.0f, 100.0f, 100.0f);
 
 	// Create camera
-	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition);
+	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(0.0f, -15.f, 0.0f));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1.0f);
 
@@ -768,32 +767,41 @@ int main()
 	
 
 	// Take care of all the light related things
-	glm::vec4 lightColor = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
+	//glm::vec4 lightColor = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
+	glm::vec4 lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 
 	terrainShader.use();
 	terrainShader.SetVec3("lightColor", lightColor);
+	terrainShader.SetVec3("objectColor", glm::vec3(0.f));
 
-	Mesh Avion(PlanePath + "airplane.obj", PlanePath);
-	Avion.setScale(glm::vec3(0.0003f, 0.0003f, 0.0003f));
-	Avion.setColor(0, glm::vec3(0.45f, 0.0f, 0.0f));
-	Avion.setColor(1, glm::vec3(0.1f, 0.1f, 0.1f));
-	Avion.setColor(2, glm::vec3(0.5f, 0.5f, 0.5f));
-	Avion.setRotation(glm::vec3(15.0f, 180.0f, 0.f));
-	Avion.setPosition(glm::vec3(0.0f, 1.8f, -1.5f));
-	Avion.initVAO();
+	// MODELE
 
-	unsigned int AvionTex = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_body.jpg");
-	unsigned int AvionTex2 = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_wings.jpg");
+	//Mesh Avion(PlanePath + "airplane.obj", PlanePath);
+	//Avion.setScale(glm::vec3(0.0003f, 0.0003f, 0.0003f));
+	////Avion.setColor(0, glm::vec3(0.45f, 0.0f, 0.0f));
+	////Avion.setColor(1, glm::vec3(0.1f, 0.1f, 0.1f));
+	////Avion.setColor(2, glm::vec3(0.5f, 0.5f, 0.5f));
+	////Avion.setRotation(glm::vec3(15.0f, 180.0f, 0.f));
+	//Avion.setPosition(glm::vec3(0.0f, 1.8f, -1.5f));
+	//Avion.initVAO();
 
-	Mesh tower(TowerPath + "Tower_Control.obj", TowerPath);
-	tower.initVAO();
+	//unsigned int AvionTex = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_body.jpg");
+	//unsigned int AvionTex2 = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_wings.jpg");
+
+	//Mesh tower(TowerPath + "Tower_Control.obj", TowerPath);
+	//tower.initVAO();
 
 
-	Mesh Map(MapPath + "Map.obj", MapPath);
-	Map.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
-	Map.setPosition(glm::vec3(1000.0f, -165.0f, -80.0f));
-	Map.initVAO();
+	//Mesh Map(MapPath + "Map.obj", MapPath);
+	//Map.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
+	//Map.setPosition(glm::vec3(1000.0f, -165.0f, -80.0f));
+	//Map.initVAO();
+
+	airplane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
+	terrain = Model(currentPath + "\\Models\\Map\\Map.obj");
+	//skybox = Model(currentPath + "\\skybox\\")
+	tower = Model(currentPath + "\\Models\\Tower\\Tower_Control.obj");
 
 	std::vector<std::string> facesCubemap =
 	{
@@ -807,34 +815,10 @@ int main()
 
 	unsigned int cubemapTexture = LoadSkybox(facesCubemap);
 
-	//// Load airplane model
-	//std::string airplaneObjFileName = (currentPath + "\\Models\\Airplane\\airplane.obj");
-	//Model airplaneObjModel(airplaneObjFileName, false);
-	//if (!airplaneObjModel.meshes.size()) {
-	//	std::cerr << "Failed to load airplane model: " << airplaneObjFileName << std::endl;
-	//}
+	unsigned int terrainTexture = CreateTexture(currentPath + "\\Map\\Map.jpg");
 
-	//// Load tower model
-	//std::string towerObjFileName = (currentPath + "\\Models\\Tower\\Tower_Control.obj");
-	//Model towerObjModel(towerObjFileName, false);
-	//if (!towerObjModel.meshes.size()) {
-	//	std::cerr << "Failed to load tower model: " << towerObjFileName << std::endl;
-	//}
+	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
 
-	//// Load map model
-	//std::string mapObjFileName = (currentPath + "\\Models\\Map\\Map.obj");
-	//Model mapObjModel(mapObjFileName, false);
-	//if (!mapObjModel.meshes.size()) {
-	//	std::cerr << "Failed to load map model: " << mapObjFileName << std::endl;
-	//}
-
-	int floorTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
-
-	//// Load pirat model
-	//std::string piratObjFileName = (currentPath + "\\Models\\Pirat\\Pirat.obj");
-	//Model piratObjModel(piratObjFileName, false);
-
-	// render loop
 	while (!glfwWindowShouldClose(window)) {
 
 		double currentFrame = glfwGetTime();
@@ -854,6 +838,7 @@ int main()
 			pCamera->SetPosition(newVector);
 		}
 
+		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -869,13 +854,28 @@ int main()
 
 		// Activate shader and set uniforms
 		lightingShader.use();
-		//glActiveTexture(GL_TEXTURE0); // Activate the texture unit first
+		glActiveTexture(GL_TEXTURE0); // Activate the texture unit first
 		//glBindTexture(GL_TEXTURE_2D, textureID);
-		//lightingShader.setInt("texture_diffuse1", 0); // This line sets the sampler uniform
+		lightingShader.setInt("texture_diffuse1", 0); // This line sets the sampler uniform
 
-		Avion.setPosition(glm::vec3(pCamera->GetPosition() + glm::vec3(0.0f, -0.3f, -1.0f)));
-		//Avion.setRotation(glm::vec3(0.f, Avion.getRotation().y, 0.f) + glm::vec3(Xrot, 0.0f, Zrot));
+		
+		float rollAngle = pCamera->GetRoll();
+		float pitchAngle = pCamera->GetPitch();
+		float yawAngle = pCamera->GetYaw();
+		glm::vec3 cameraUp = pCamera->GetUp();
+		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
+			
 
+		// render plane
+		renderModel(terrainShader, airplane, airplanePosition, glm::vec3(-90.0f, 0.f, 0.0f), glm::vec3(0.0005f));
+		
+		// render turn
+		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.01f));
+		
+		// render teren
+		
+		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 5.0f), glm::vec3(0.01), terrainTexture);
+		
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
 		lightingShader.SetVec3("lightPos", lightPos);
@@ -898,13 +898,7 @@ int main()
 
 		programShader.setMat4("projection", projection);
 		programShader.setMat4("view", view);
-		//Avion.render(&programShader);
-		glBindTexture(GL_TEXTURE_2D, AvionTex);
-		Avion.render(&terrainShader);
-		tower.render(&terrainShader);
-
 		
-
 		lampShader.use();
 		lampShader.setMat4("projection", projection);
 		lampShader.setMat4("view", view);
@@ -918,50 +912,25 @@ int main()
 		terrainShader.use();
 		terrainShader.setMat4("projection", projection);
 		terrainShader.setMat4("view", view);
-		glBindTexture(GL_TEXTURE_2D, floorTexture);
-		Map.render(&terrainShader);
+		/*Avion.render(&terrainShader);
+		tower.render(&terrainShader);
+		*/			
+		
+		//glBindTexture(GL_TEXTURE_2D, floorTexture);
+		//Map.render(&terrainShader);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 
-
-		// Render plane
-		//glBindVertexArray(planeVAO);
-		//glm::mat4 planeModel = glm::mat4(1.0);
-		//lightingShader.setMat4("model", planeModel);
-		////glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-
-		//// render map
-		//glm::mat4 mapModel = glm::mat4(1.0f);
-		//mapModel = glm::translate(mapModel, initialPosition - glm::vec3(0, 120.0f, 0));
-		//mapModel = glm::scale(mapModel, glm::vec3(0.1f));
-		//lightingShader.setMat4("model", mapModel);
-		////mapObjModel.Draw(lightingShader);
-
-
-		//// Render tower model
-		//glm::mat4 towerModel = glm::mat4(1.0);
-		//towerModel = glm::translate(towerModel, initialPosition + glm::vec3(-2.0f, -2.0f, -15));
-		//towerModel = glm::scale(towerModel, glm::vec3(0.1f));
-		//lightingShader.setMat4("model", towerModel);
-		////towerObjModel.Draw(lightingShader);
-
+		
 		//// Render airplane model
 		//glm::mat4 airplaneModel = glm::mat4(1.0);
 		// Assume the functions GetRoll() and GetPitch() give us the current roll and pitch angles
 
-		float rollAngle = pCamera->GetRoll();
-		float pitchAngle = pCamera->GetPitch();
-		float yawAngle = pCamera->GetYaw();
-		//glm::vec3 cameraForward = pCamera->GetForward();
-		glm::vec3 cameraUp = pCamera->GetUp();
-
+		
 
 		/*airplaneModel = glm::translate(airplaneModel, pCamera->GetPosition() + glm::vec3(0.0f, -0.3f, -1.0f));
 		airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
 */
-		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
 		//airplaneModel = glm::translate(airplaneModel, airplanePosition);
 
 		//// Orientează avionul să fie perpendicular pe direcția de vizualizare a camerei
@@ -1007,13 +976,13 @@ int main()
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS);
 
 
 		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -1070,4 +1039,73 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yOffset)
 	pCamera->ProcessMouseScroll((float)yOffset);
 }
 
+void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, float rotationAngle, const glm::vec3& scale)
+{
 
+	ourShader.use();
+	ourShader.SetVec3("objectColor", glm::vec3(0.0f));
+
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, position);
+	model = glm::rotate(model, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, scale);
+
+	glm::mat4 viewMatrix = pCamera->GetViewMatrix();
+	glm::mat4 projectionMatrix = pCamera->GetProjectionMatrix();
+
+	ourShader.setMat4("model", model);
+	ourShader.setMat4("view", viewMatrix);
+	ourShader.setMat4("projection", projectionMatrix);
+
+	ourModel.Draw(ourShader);
+}
+
+void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale)
+{
+	ourShader.use();
+	ourShader.SetVec3("objectColor", glm::vec3(0.0f));
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, position);
+
+	// Aplică rotația pe fiecare axă
+	model = glm::rotate(model, glm::radians(rotationAngles.x), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotație pe axa X
+	model = glm::rotate(model, glm::radians(rotationAngles.y), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotație pe axa Y
+	model = glm::rotate(model, glm::radians(rotationAngles.z), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotație pe axa Z
+
+	model = glm::scale(model, scale);
+
+	glm::mat4 viewMatrix = pCamera->GetViewMatrix();
+	glm::mat4 projectionMatrix = pCamera->GetProjectionMatrix();
+
+	ourShader.setMat4("model", model);
+	ourShader.setMat4("view", viewMatrix);
+	ourShader.setMat4("projection", projectionMatrix);
+
+	ourModel.Draw(ourShader);
+}
+
+void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& position, const glm::vec3& scale, int terrainTexture) {
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+	model = glm::scale(model, scale);
+	terrainShader.use();
+	terrainShader.setMat4("model", model);
+	terrainShader.setMat4("view", pCamera->GetViewMatrix());
+	terrainShader.setMat4("projection", pCamera->GetProjectionMatrix());
+	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+
+	int gridWidth = 10;
+	int gridDepth = 10;
+
+	for (int x = 0; x < gridWidth; x++) {
+		for (int z = 0; z < gridDepth; z++) {
+			glm::vec3 pos = position + glm::vec3(x * scale.x * 2.0f, 0.0f, z * scale.z * 2.0f); // Ajustează 2.0f în funcție de dimensiunea reală a modelului de teren
+			glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+			model = glm::scale(model, scale);
+			terrainShader.setMat4("model", model);
+			terrainModel.Draw(terrainShader);
+		}
+	}
+	//terrainModel.Draw(terrainShader);
+}

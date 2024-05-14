@@ -12,8 +12,8 @@ newmtl airplane_body
 	Kd 1.0000 1.0000 1.0000
 	Ks 0.4950 0.4950 0.4950
 	Ke 0.0000 0.0000 0.0000
-	map_Ka airplane_body.jpg
-	map_Kd airplane_body.jpg
+	map_Ka airplane_body_diffuse_v1.jpg
+	map_Kd airplane_body_diffuse_v1.jpg
 
 newmtl airplane_wings
 	Ns 20.0000
@@ -26,5 +26,5 @@ newmtl airplane_wings
 	Kd 1.0000 1.0000 1.0000
 	Ks 0.4950 0.4950 0.4950
 	Ke 0.0000 0.0000 0.0000
-	map_Ka airplane_wings.jpg
-	map_Kd airplane_wings.jpg
+	map_Ka airplane_wings_diffuse_v1.jpg
+	map_Kd airplane_wings_diffuse_v1.jpg
