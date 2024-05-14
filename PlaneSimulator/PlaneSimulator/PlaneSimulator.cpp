@@ -113,34 +113,34 @@ void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, 
 void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale);
 void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& position, const glm::vec3& scale, int terrainTexture);
 
-
-GLuint loadCubemap(std::vector<std::string> faces) {
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-	int width, height, nrChannels;
-	for (GLuint i = 0; i < faces.size(); i++) {
-		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-			);
-			stbi_image_free(data);
-		}
-		else {
-			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-			stbi_image_free(data);
-		}
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	return textureID;
-}
+//
+//GLuint loadCubemap(std::vector<std::string> faces) {
+//	GLuint textureID;
+//	glGenTextures(1, &textureID);
+//	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+//
+//	int width, height, nrChannels;
+//	for (GLuint i = 0; i < faces.size(); i++) {
+//		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+//		if (data) {
+//			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+//				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+//			);
+//			stbi_image_free(data);
+//		}
+//		else {
+//			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+//			stbi_image_free(data);
+//		}
+//	}
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//
+//	return textureID;
+//}
 
 unsigned int CreateTexture(const std::string& strTexturePath)
 {
@@ -425,7 +425,7 @@ public:
 			glm::vec3 newPosition = position + forward * GetSpeed() * deltaTime * 10.0f;
 
 			// Verifică dacă noua poziție este sub înălțimea minimă permisă
-			if (newPosition.y < -0.5f) {
+			if (newPosition.y < -20.0f) {
 				newPosition.y = 0.0F; // Asigură-te că camera nu coboară sub plan
 			}
 
@@ -667,51 +667,7 @@ int main()
 	}
 	stbi_image_free(data);
 
-	// Crearea și configurarea bufferelor vertex și array pentru plan
-	//unsigned int planeVBO, planeVAO;
-	/*glGenVertexArrays(1, &planeVAO);
-	glGenBuffers(1, &planeVBO);
-	glBindVertexArray(planeVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);*/
-
-
-	// Crearea și configurarea bufferelor vertex și array pentru tower
-	/*unsigned int towerVBO, towerVAO;
-	glGenVertexArrays(1, &towerVAO);
-	glGenBuffers(1, &towerVBO);
-	glBindVertexArray(towerVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, towerVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);*/
-
-	// Crearea și configurarea bufferelor vertex și array pentru map
-	/*unsigned int mapVBO, mapVAO;
-	glGenVertexArrays(1, &mapVAO);
-	glGenBuffers(1, &mapVBO);
-	glBindVertexArray(mapVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, mapVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);*/
-	/*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
-
-
-	//GLuint skyboxVAO, skyboxVBO, skyboxEBO;
-	// Create VAO, VBO, and EBO for the skybox
+	
 	unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
 	glGenVertexArrays(1, &skyboxVAO);
 	glGenBuffers(1, &skyboxVBO);
@@ -728,7 +684,7 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	
-	glm::vec3 initialPosition(0.0f, 100.0f, 100.0f);
+	glm::vec3 initialPosition(0.0f, 0.0f, 0.0f);
 
 	// Create camera
 	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(0.0f, -15.f, 0.0f));
@@ -746,8 +702,6 @@ int main()
 
 
 	// Load object model
-	/*std::string objFileName = (currentPath + "\\Models\\CylinderProject.obj");
-	Model objModel(objFileName, false);*/
 
 
 	//Paths
@@ -766,8 +720,6 @@ int main()
 	Shader terrainShader((currentPath + "\\PlaneSimulator\\terrain.vs").c_str(), (currentPath + "\\PlaneSimulator\\terrain.fs").c_str());
 	
 
-	// Take care of all the light related things
-	//glm::vec4 lightColor = glm::vec4(0.6f, 0.6f, 0.6f, 1.0f);
 	glm::vec4 lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 
@@ -776,31 +728,8 @@ int main()
 	terrainShader.SetVec3("objectColor", glm::vec3(0.f));
 
 	// MODELE
-
-	//Mesh Avion(PlanePath + "airplane.obj", PlanePath);
-	//Avion.setScale(glm::vec3(0.0003f, 0.0003f, 0.0003f));
-	////Avion.setColor(0, glm::vec3(0.45f, 0.0f, 0.0f));
-	////Avion.setColor(1, glm::vec3(0.1f, 0.1f, 0.1f));
-	////Avion.setColor(2, glm::vec3(0.5f, 0.5f, 0.5f));
-	////Avion.setRotation(glm::vec3(15.0f, 180.0f, 0.f));
-	//Avion.setPosition(glm::vec3(0.0f, 1.8f, -1.5f));
-	//Avion.initVAO();
-
-	//unsigned int AvionTex = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_body.jpg");
-	//unsigned int AvionTex2 = CreateTexture(currentPath + "\\Models\\Airplane\\airplane_wings.jpg");
-
-	//Mesh tower(TowerPath + "Tower_Control.obj", TowerPath);
-	//tower.initVAO();
-
-
-	//Mesh Map(MapPath + "Map.obj", MapPath);
-	//Map.setScale(glm::vec3(0.1f, 0.1f, 0.1f));
-	//Map.setPosition(glm::vec3(1000.0f, -165.0f, -80.0f));
-	//Map.initVAO();
-
 	airplane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	terrain = Model(currentPath + "\\Models\\Map\\Map.obj");
-	//skybox = Model(currentPath + "\\skybox\\")
 	tower = Model(currentPath + "\\Models\\Tower\\Tower_Control.obj");
 
 	std::vector<std::string> facesCubemap =
@@ -825,6 +754,7 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+
 		processInput(window);
 		pCamera->UpdateFlight(deltaTime); // Actualizează zborul dacă este necesar
 
@@ -832,9 +762,9 @@ int main()
 
 			glm::vec3 newVector = pCamera->GetPosition() + pCamera->GetForward() * pCamera->GetSpeed();
 
-			if (newVector.y < 0.0f)
-				newVector.y = 0.0f;
-
+			if (newVector.y <= initialPositionTerrain.y + 11)
+				newVector.y += 1.0f;
+			
 			pCamera->SetPosition(newVector);
 		}
 
@@ -842,13 +772,12 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		
+
 		// Camera transformations
 		glm::vec3 cameraPosition = pCamera->GetPosition();
 		glm::vec3 cameraForward = pCamera->GetForward();
 
-		// Update light position over time
-		//lightPos.x = 1.0 * cos(currentFrame);  // This can be adjusted
-		//lightPos.z = 1.0 * sin(currentFrame);
 		lightPos.x = 1.0;
 		lightPos.y = 1.0;
 
@@ -864,7 +793,7 @@ int main()
 		float yawAngle = pCamera->GetYaw();
 		glm::vec3 cameraUp = pCamera->GetUp();
 		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
-			
+		
 
 		// render plane
 		renderModel(terrainShader, airplane, airplanePosition, glm::vec3(-90.0f, 0.f, 0.0f), glm::vec3(0.0005f));
@@ -874,7 +803,7 @@ int main()
 		
 		// render teren
 		
-		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 5.0f), glm::vec3(0.01), terrainTexture);
+		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
 		
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -882,7 +811,6 @@ int main()
 		lightingShader.SetVec3("viewPos", pCamera->GetPosition());
 		lightingShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		lightingShader.setMat4("view", pCamera->GetViewMatrix());
-
 
 		glm::mat4 projection = pCamera->GetProjectionMatrix();
 		glm::mat4 view = pCamera->GetViewMatrix();
@@ -903,7 +831,7 @@ int main()
 		lampShader.setMat4("projection", projection);
 		lampShader.setMat4("view", view);
 		glm::mat4 lightModel = glm::translate(glm::mat4(1.0), lightPos);
-		lightModel = glm::scale(lightModel, glm::vec3(300.f)); // a smaller cube
+		lightModel = glm::scale(lightModel, glm::vec3(3.f)); // a smaller cube
 		lampShader.setMat4("model", lightModel);
 
 		glBindVertexArray(lightVAO);
@@ -912,55 +840,8 @@ int main()
 		terrainShader.use();
 		terrainShader.setMat4("projection", projection);
 		terrainShader.setMat4("view", view);
-		/*Avion.render(&terrainShader);
-		tower.render(&terrainShader);
-		*/			
 		
-		//glBindTexture(GL_TEXTURE_2D, floorTexture);
-		//Map.render(&terrainShader);
 		glBindTexture(GL_TEXTURE_2D, 0);
-
-
-		
-		//// Render airplane model
-		//glm::mat4 airplaneModel = glm::mat4(1.0);
-		// Assume the functions GetRoll() and GetPitch() give us the current roll and pitch angles
-
-		
-
-		/*airplaneModel = glm::translate(airplaneModel, pCamera->GetPosition() + glm::vec3(0.0f, -0.3f, -1.0f));
-		airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
-*/
-		//airplaneModel = glm::translate(airplaneModel, airplanePosition);
-
-		//// Orientează avionul să fie perpendicular pe direcția de vizualizare a camerei
-		//glm::vec3 right = glm::normalize(glm::cross(cameraUp, cameraForward));
-		//glm::vec3 upward = glm::normalize(glm::cross(cameraForward, right));
-
-		//airplaneModel[0] = glm::vec4(-right, 0.0f);
-		//airplaneModel[1] = glm::vec4(upward, 0.0f);
-		//airplaneModel[2] = glm::vec4(-cameraForward, 0.0f); // Inversăm forward pentru a orienta avionul spre cameră
-		//airplaneModel = glm::scale(airplaneModel, glm::vec3(0.0005f));
-
-
-		//airplaneModel = glm::rotate(airplaneModel, glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		////airplaneModel = glm::rotate(airplaneModel, glm::radians(-rollAngle), glm::vec3(0.0f, 0.0f, 2.0f));
-		//airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetPitch() + 10), glm::vec3(1.0f, 0.0f, 0.0f));
-		////airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetYaw()-270), glm::vec3(0.0f, 0.0f, -1.0f)); 
-
-		//airplaneModel = glm::rotate(airplaneModel, glm::radians(pCamera->GetYaw()-90), glm::vec3(0.0f, 0.0f, -1.0f)); 
-
-		//lightingShader.setMat4("model", airplaneModel);
-		//airplaneObjModel.Draw(lightingShader);
-
-
-		// Render lamp (light source visualization)
-		//lampShader.use();
-		//lampShader.setMat4("projection", projection);
-		//lampShader.setMat4("view", view);
-		//glm::mat4 lightModel = glm::translate(glm::mat4(1.0), lightPos);
-		//lightModel = glm::scale(lightModel, glm::vec3(0.1f));  // Smaller cube for the light
-		//lampShader.setMat4("model", lightModel);
 
 		//render skybox
 		glDepthFunc(GL_LEQUAL);
@@ -976,13 +857,13 @@ int main()
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS);
 
 
 		glBindVertexArray(lightVAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -1069,7 +950,6 @@ void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, 
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
-	// Aplică rotația pe fiecare axă
 	model = glm::rotate(model, glm::radians(rotationAngles.x), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotație pe axa X
 	model = glm::rotate(model, glm::radians(rotationAngles.y), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotație pe axa Y
 	model = glm::rotate(model, glm::radians(rotationAngles.z), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotație pe axa Z
@@ -1107,5 +987,5 @@ void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& 
 			terrainModel.Draw(terrainShader);
 		}
 	}
-	//terrainModel.Draw(terrainShader);
 }
+
