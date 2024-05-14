@@ -799,7 +799,7 @@ int main()
 		renderModel(terrainShader, airplane, airplanePosition, glm::vec3(-90.0f, 0.f, 0.0f), glm::vec3(0.0005f));
 		
 		// render turn
-		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.01f));
+		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
 		
 		// render teren
 		
