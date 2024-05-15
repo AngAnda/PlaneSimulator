@@ -732,7 +732,7 @@ int main()
 	terrain = Model(currentPath + "\\Models\\Map\\Map.obj");
 	tower = Model(currentPath + "\\Models\\Tower\\Tower_Control.obj");
 	road = Model(currentPath + "\\Models\\Road\\Road.obj");
-	hangare = Model(currentPath + "\\Models\\Hangare\\MetalHangare.obj");
+	hangare = Model(currentPath + "\\Models\\Hangar\\uploads_files_852157_Shelter_simple.obj");
 
 	std::vector<std::string> facesCubemap =
 	{
@@ -803,7 +803,9 @@ int main()
 		// render turn
 		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
 		
-		renderModel(terrainShader, road, initialPosition + glm::vec3(0.0f, -19.4f, -7.0f), 90.0f, glm::vec3(0.5f));
+		renderModel(terrainShader, road, initialPosition + glm::vec3(0.0f, -19.4f, -7.0f), 90.0f, glm::vec3(0.3f));
+		
+		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-28.0f, -19.4f, -10.0f), 0.0f, glm::vec3(0.3f));
 
 		// render teren
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
