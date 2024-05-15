@@ -540,7 +540,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-Model airplane, tower, skybox, terrain;
+Model airplane, tower, skybox, terrain, road, hangare;
 
 int main()
 {
@@ -718,7 +718,7 @@ int main()
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
 	Shader skyboxShader((currentPath + "\\PlaneSimulator\\skybox.vs").c_str(), (currentPath + "\\PlaneSimulator\\skybox.fs").c_str());
 	Shader terrainShader((currentPath + "\\PlaneSimulator\\terrain.vs").c_str(), (currentPath + "\\PlaneSimulator\\terrain.fs").c_str());
-	
+	Shader aiportShader((currentPath + "\\PlaneSimulator\\default.vs").c_str(), (currentPath + "\\PlaneSimulator\\default.fs").c_str());
 
 	glm::vec4 lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -731,6 +731,8 @@ int main()
 	airplane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	terrain = Model(currentPath + "\\Models\\Map\\Map.obj");
 	tower = Model(currentPath + "\\Models\\Tower\\Tower_Control.obj");
+	road = Model(currentPath + "\\Models\\Road\\Road.obj");
+	hangare = Model(currentPath + "\\Models\\Hangare\\MetalHangare.obj");
 
 	std::vector<std::string> facesCubemap =
 	{
@@ -744,7 +746,7 @@ int main()
 
 	unsigned int cubemapTexture = LoadSkybox(facesCubemap);
 
-	unsigned int terrainTexture = CreateTexture(currentPath + "\\Map\\Map.jpg");
+	unsigned int terrainTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
 	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
 
@@ -801,8 +803,9 @@ int main()
 		// render turn
 		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
 		
+		renderModel(terrainShader, road, initialPosition + glm::vec3(0.0f, -19.4f, -7.0f), 90.0f, glm::vec3(0.5f));
+
 		// render teren
-		
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
 		
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
@@ -819,13 +822,13 @@ int main()
 		lightingShader.setMat4("view", view);
 
 
-		programShader.use();
+		/*programShader.use();
 		programShader.SetVec3("lightPos", lightPos);
 		programShader.SetVec3("lightColor", glm::vec3(0.6f));
 		programShader.SetVec3("viewPos", pCamera->GetPosition());
 
 		programShader.setMat4("projection", projection);
-		programShader.setMat4("view", view);
+		programShader.setMat4("view", view);*/
 		
 		lampShader.use();
 		lampShader.setMat4("projection", projection);
@@ -836,10 +839,6 @@ int main()
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		terrainShader.use();
-		terrainShader.setMat4("projection", projection);
-		terrainShader.setMat4("view", view);
 		
 		glBindTexture(GL_TEXTURE_2D, 0);
 

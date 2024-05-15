@@ -7,13 +7,7 @@ layout(location = 4) in vec3 aAmbient;
 layout(location = 5) in vec3 aDiffuse;
 layout(location = 6) in vec3 aSpecular;
 
-out vec3 vs_FragPos;
-out vec3 vs_Color;
-out vec2 vs_TexCoord;
-out vec3 vs_Normal;
-out vec3 vs_Ambient;
-out vec3 vs_Diffuse;
-out vec3 vs_Specular;
+out vec2 TexCoords;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -21,13 +15,6 @@ uniform mat4 projection;
 
 void main()
 {
-	vs_FragPos = vec4(model * vec4(aPos, 1.0f)).xyz;
-	vs_Color = aColor;
-	vs_TexCoord = vec2(aTexCoord.x, aTexCoord.y * -1.f);
-	vs_Normal = mat3(model) * aNormal;
-	vs_Ambient = aAmbient;
-	vs_Diffuse = aDiffuse;
-	vs_Specular = aSpecular;
-
-	gl_Position = projection * view * vec4(vs_FragPos, 1.0f);
+	TexCoords = aTexCoord;
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }
