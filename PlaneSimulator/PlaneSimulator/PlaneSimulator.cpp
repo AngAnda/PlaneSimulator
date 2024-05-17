@@ -320,7 +320,8 @@ public:
 	}
 
 	void ProcessKeyboard(ECameraMovementType direction, float deltaTime) {
-		float velocity = 20.5f * deltaTime;  // Exemplu de viteză de rotație
+		float rotationSpeed = 45.0f * deltaTime;  // Rotation speed factor
+		float movementSpeed = 10.0f * deltaTime;  //
 
 		switch (direction) {
 		case FORWARD:
@@ -334,34 +335,25 @@ public:
 			//	position -= forward * GetSpeed() * deltaTime;
 			break;
 		case LEFT:
-			roll -= velocity * 10;  // Multiplicăm pentru a avea o rotație mai rapidă
-			position -= right * velocity;
+			yaw -= rotationSpeed;  // Rotate left
 			break;
 		case RIGHT:
-			roll += velocity * 10;
-			position += right * velocity;
+			yaw += rotationSpeed;  // Rotate right
 			break;
 		case UP:
-			pitch += velocity * 10 * deltaTime; // Asigură-te că folosești deltaTime pentru a suaviza mișcarea
+			pitch += rotationSpeed; // Pitch up
 			break;
 		case DOWN:
-			pitch -= velocity * 10 * deltaTime;
-			break;
-		case ROLL_LEFT:
-			roll -= velocity * 10;  // Multiplicăm pentru a avea o rotație mai rapidă
-			break;
-		case ROLL_RIGHT:
-			roll += velocity * 10;
-			break;
-		case PITCH_UP:
-			pitch += velocity * 10;
-			break;
-		case PITCH_DOWN:
-			pitch -= velocity * 10;
+			pitch -= rotationSpeed; // Pitch down
 			break;
 		default:
 			break;
 		}
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+		UpdateCameraVectors();
 
 		position += forward * GetSpeed() * deltaTime * 10.0f;
 
@@ -463,25 +455,21 @@ private:
 		UpdateCameraVectors();
 	}
 
-	void UpdateCameraVectors()
-	{
-
-		//// Calculate the new forward vector
+	void UpdateCameraVectors() {
+		// Calculate the new forward vector
 		this->forward.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 		this->forward.y = sin(glm::radians(pitch));
 		this->forward.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 		this->forward = glm::normalize(this->forward);
-		
 
 		// Calculate new Right and Up vectors
-		glm::vec3 newRight = glm::normalize(glm::cross(forward, worldUp));  // Adjust right vector
-		up = glm::normalize(glm::cross(newRight, forward));  // Recompute up vector
+		this->right = glm::normalize(glm::cross(forward, worldUp));  // Adjust right vector
+		this->up = glm::normalize(glm::cross(right, forward));  // Recompute up vector
 
-		// Apply roll rotation around the forward axis
+		// Apply roll rotation around the forward axis if needed
 		glm::mat4 rollMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(roll), forward);
-		right = glm::normalize(glm::cross(forward, worldUp));
-		up = glm::normalize(glm::cross(right, forward));
-
+		this->right = glm::normalize(glm::vec3(rollMatrix * glm::vec4(this->right, 1.0)));
+		this->up = glm::normalize(glm::cross(right, forward));
 	}
 
 protected:
@@ -801,10 +789,8 @@ int main() {
 
 		if (pCamera->IsFlying()) {
 			glm::vec3 newVector = pCamera->GetPosition() + pCamera->GetForward() * pCamera->GetSpeed();
-
 			if (newVector.y <= initialPositionTerrain.y + 11)
 				newVector.y += 1.0f;
-
 			pCamera->SetPosition(newVector);
 		}
 
@@ -815,6 +801,7 @@ int main() {
 		// Camera transformations
 		glm::vec3 cameraPosition = pCamera->GetPosition();
 		glm::vec3 cameraForward = pCamera->GetForward();
+		glm::vec3 rotationAngles = glm::vec3(pCamera->GetPitch(), pCamera->GetYaw(), pCamera->GetRoll()) + glm::vec3(-90.0f, 90.f, 0.0f);
 
 		lightPos.x = 1.0;
 		lightPos.y = 1.0;
@@ -832,7 +819,7 @@ int main() {
 		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
 
 		// render plane
-		renderModel(terrainShader, airplane, airplanePosition, glm::vec3(-90.0f, 0.f, 0.0f), glm::vec3(0.0005f));
+		renderModel(terrainShader, airplane, airplanePosition, rotationAngles, glm::vec3(0.0005f));
 
 		// render turn
 		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
@@ -907,8 +894,7 @@ int main() {
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-void processInput(GLFWwindow* window)
-{
+void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -966,17 +952,16 @@ void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, 
 	ourModel.Draw(ourShader);
 }
 
-void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale)
-{
+void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale) {
 	ourShader.use();
 	ourShader.SetVec3("objectColor", glm::vec3(0.0f));
 
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
-	model = glm::rotate(model, glm::radians(rotationAngles.x), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotație pe axa X
-	model = glm::rotate(model, glm::radians(rotationAngles.y), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotație pe axa Y
-	model = glm::rotate(model, glm::radians(rotationAngles.z), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotație pe axa Z
+	model = glm::rotate(model, glm::radians(rotationAngles.x), glm::vec3(1.0f, 0.0f, 0.0f)); // Rotation around X axis
+	model = glm::rotate(model, glm::radians(rotationAngles.y), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotation around Y axis
+	model = glm::rotate(model, glm::radians(rotationAngles.z), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotation around Z axis
 
 	model = glm::scale(model, scale);
 
