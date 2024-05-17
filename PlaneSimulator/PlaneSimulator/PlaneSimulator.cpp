@@ -35,6 +35,8 @@
 
 
 // settings
+float timeOfDay = 12.0f; // Time of day in range [0.0, 24.0]
+const float dayDuration = 60.0f; // Duration of a full day-night cycle in seconds
 const unsigned int SCR_WIDTH = 1800;
 const unsigned int SCR_HEIGHT = 1200;
 
@@ -542,8 +544,45 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 Model airplane, tower, skybox, terrain, road, hangare;
 
-int main()
-{
+glm::vec3 getSkyColor(float timeOfDay) {
+	glm::vec3 dayColor(0.5f, 0.7f, 1.0f); // Light blue color for the day
+	glm::vec3 nightColor(0.0f, 0.0f, 0.1f); // Dark blue color for the night
+
+	if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+		// Night time
+		return nightColor;
+	}
+	else if (timeOfDay >= 6.0f && timeOfDay <= 12.0f) {
+		// Morning to noon
+		float t = (timeOfDay - 6.0f) / 6.0f;
+		return glm::mix(nightColor, dayColor, t);
+	}
+	else {
+		// Noon to evening
+		float t = (timeOfDay - 12.0f) / 6.0f;
+		return glm::mix(dayColor, nightColor, t);
+	}
+}
+
+float getLightIntensity(float timeOfDay) {
+	if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
+		// Night time
+		return 0.1f;
+	}
+	else if (timeOfDay >= 6.0f && timeOfDay <= 12.0f) {
+		// Morning to noon
+		float t = (timeOfDay - 6.0f) / 6.0f;
+		return glm::mix(0.1f, 1.0f, t);
+	}
+	else {
+		// Noon to evening
+		float t = (timeOfDay - 12.0f) / 6.0f;
+		return glm::mix(1.0f, 0.1f, t);
+	}
+}
+
+
+int main() {
 	// glfw: initialize and configure
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -642,7 +681,6 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-
 	// Încărcarea texturii de iarbă
 	unsigned int grassTexture;
 	glGenTextures(1, &grassTexture);
@@ -667,7 +705,6 @@ int main()
 	}
 	stbi_image_free(data);
 
-	
 	unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
 	glGenVertexArrays(1, &skyboxVAO);
 	glGenBuffers(1, &skyboxVBO);
@@ -683,7 +720,6 @@ int main()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	
 	glm::vec3 initialPosition(0.0f, 0.0f, 0.0f);
 
 	// Create camera
@@ -700,9 +736,7 @@ int main()
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string currentPath = converter.to_bytes(wscurrentPath);
 
-
 	// Load object model
-
 
 	//Paths
 	std::string skyBoxPath = currentPath + "\\Models\\skybox\\";
@@ -710,7 +744,6 @@ int main()
 	std::string AirportPath = currentPath + "\\Models\\Airport\\";
 	std::string MapPath = currentPath + "\\Models\\Map\\";
 	std::string TowerPath = currentPath + "\\Models\\Tower\\";
-
 
 	//Shaders
 	Shader programShader((currentPath + "\\PlaneSimulator\\default.vs").c_str(), (currentPath + "\\PlaneSimulator\\default.fs").c_str());
@@ -721,7 +754,6 @@ int main()
 	Shader aiportShader((currentPath + "\\PlaneSimulator\\default.vs").c_str(), (currentPath + "\\PlaneSimulator\\default.fs").c_str());
 
 	glm::vec4 lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
 
 	terrainShader.use();
 	terrainShader.SetVec3("lightColor", lightColor);
@@ -756,25 +788,29 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		// Update time of day
+		timeOfDay += deltaTime * (24.0f / dayDuration);
+		if (timeOfDay > 24.0f) timeOfDay -= 24.0f;
+
+		// Calculate sky color and light intensity based on time of day
+		glm::vec3 skyColor = getSkyColor(timeOfDay);
+		float lightIntensity = getLightIntensity(timeOfDay);
 
 		processInput(window);
 		pCamera->UpdateFlight(deltaTime); // Actualizează zborul dacă este necesar
 
 		if (pCamera->IsFlying()) {
-
 			glm::vec3 newVector = pCamera->GetPosition() + pCamera->GetForward() * pCamera->GetSpeed();
 
 			if (newVector.y <= initialPositionTerrain.y + 11)
 				newVector.y += 1.0f;
-			
+
 			pCamera->SetPosition(newVector);
 		}
 
 		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(skyColor.r, skyColor.g, skyColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		
 
 		// Camera transformations
 		glm::vec3 cameraPosition = pCamera->GetPosition();
@@ -789,29 +825,27 @@ int main()
 		//glBindTexture(GL_TEXTURE_2D, textureID);
 		lightingShader.setInt("texture_diffuse1", 0); // This line sets the sampler uniform
 
-		
 		float rollAngle = pCamera->GetRoll();
 		float pitchAngle = pCamera->GetPitch();
 		float yawAngle = pCamera->GetYaw();
 		glm::vec3 cameraUp = pCamera->GetUp();
 		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
-		
 
 		// render plane
 		renderModel(terrainShader, airplane, airplanePosition, glm::vec3(-90.0f, 0.f, 0.0f), glm::vec3(0.0005f));
-		
+
 		// render turn
 		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
-		
+
 		renderModel(terrainShader, road, initialPosition + glm::vec3(0.0f, -19.4f, -7.0f), 90.0f, glm::vec3(0.3f));
-		
+
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-28.0f, -19.4f, -10.0f), 0.0f, glm::vec3(0.3f));
 
 		// render teren
-		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f,0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
-		
+		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
+
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
-		lightingShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		lightingShader.SetVec3("lightColor", glm::vec3(lightIntensity)); // Set light color intensity based on the time of day
 		lightingShader.SetVec3("lightPos", lightPos);
 		lightingShader.SetVec3("viewPos", pCamera->GetPosition());
 		lightingShader.setMat4("projection", pCamera->GetProjectionMatrix());
@@ -823,15 +857,6 @@ int main()
 		lightingShader.setMat4("projection", projection);
 		lightingShader.setMat4("view", view);
 
-
-		/*programShader.use();
-		programShader.SetVec3("lightPos", lightPos);
-		programShader.SetVec3("lightColor", glm::vec3(0.6f));
-		programShader.SetVec3("viewPos", pCamera->GetPosition());
-
-		programShader.setMat4("projection", projection);
-		programShader.setMat4("view", view);*/
-		
 		lampShader.use();
 		lampShader.setMat4("projection", projection);
 		lampShader.setMat4("view", view);
@@ -841,19 +866,18 @@ int main()
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		
+
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		//render skybox
 		glDepthFunc(GL_LEQUAL);
-		glUseProgram(skyboxShader.ID);
+		skyboxShader.use();
 		projection = pCamera->GetProjectionMatrix();
 		view = glm::mat4(glm::mat3(pCamera->GetViewMatrix()));
 		skyboxShader.setMat4("projection", projection);
 		skyboxShader.setMat4("view", view);
 
-		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		skyboxShader.setVec3("skyColor", skyColor); // Pass skyColor to the skybox shader
 
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -861,7 +885,6 @@ int main()
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glDepthFunc(GL_LESS);
-
 
 		glBindVertexArray(lightVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
