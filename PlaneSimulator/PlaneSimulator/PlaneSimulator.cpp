@@ -554,21 +554,24 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 Model airplane, tower, skybox, terrain, road, hangare;
 
-glm::vec3 getSkyColor(float timeOfDay) {
+glm::vec3 getSkyColor(float timeOfDay, std::string& skyboxPath) {
 	glm::vec3 dayColor(0.5f, 0.7f, 1.0f); // Light blue color for the day
 	glm::vec3 nightColor(0.0f, 0.0f, 0.1f); // Dark blue color for the night
 
 	if (timeOfDay < 6.0f || timeOfDay > 18.0f) {
 		// Night time
+		skyboxPath += "\\Models\\skyboxNight\\";
 		return nightColor;
 	}
 	else if (timeOfDay >= 6.0f && timeOfDay <= 12.0f) {
 		// Morning to noon
+		skyboxPath += "\\Models\\skybox\\";
 		float t = (timeOfDay - 6.0f) / 6.0f;
 		return glm::mix(nightColor, dayColor, t);
 	}
 	else {
 		// Noon to evening
+		skyboxPath += "\\Models\\skybox\\";
 		float t = (timeOfDay - 12.0f) / 6.0f;
 		return glm::mix(dayColor, nightColor, t);
 	}
@@ -749,7 +752,6 @@ int main() {
 	// Load object model
 
 	//Paths
-	std::string skyBoxPath = currentPath + "\\Models\\skybox\\";
 	std::string PlanePath = currentPath + "\\Models\\Airplane\\";
 	std::string AirportPath = currentPath + "\\Models\\Airport\\";
 	std::string MapPath = currentPath + "\\Models\\Map\\";
@@ -776,23 +778,13 @@ int main() {
 	road = Model(currentPath + "\\Models\\Road\\Road.obj");
 	hangare = Model(currentPath + "\\Models\\Hangar\\uploads_files_852157_Shelter_simple.obj");
 
-	std::vector<std::string> facesCubemap =
-	{
-		skyBoxPath + "px.png",
-		skyBoxPath + "nx.png",
-		skyBoxPath + "py.png",
-		skyBoxPath + "ny.png",
-		skyBoxPath + "pz.png",
-		skyBoxPath + "nz.png"
-	};
-
-	unsigned int cubemapTexture = LoadSkybox(facesCubemap);
-
 	unsigned int terrainTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
 	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
 
 	while (!glfwWindowShouldClose(window)) {
+
+		std::string skyBoxPath = currentPath;
 
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -803,8 +795,21 @@ int main() {
 		if (timeOfDay > 24.0f) timeOfDay -= 24.0f;
 
 		// Calculate sky color and light intensity based on time of day
-		glm::vec3 skyColor = getSkyColor(timeOfDay);
+		glm::vec3 skyColor = getSkyColor(timeOfDay, skyBoxPath);
 		float lightIntensity = getLightIntensity(timeOfDay);
+
+		std::vector<std::string> facesCubemap =
+		{
+			skyBoxPath + "px.png",
+			skyBoxPath + "nx.png",
+			skyBoxPath + "py.png",
+			skyBoxPath + "ny.png",
+			skyBoxPath + "pz.png",
+			skyBoxPath + "nz.png"
+		};
+
+		unsigned int cubemapTexture = LoadSkybox(facesCubemap);
+
 
 		processInput(window);
 		pCamera->UpdateFlight(deltaTime); // Actualizează zborul dacă este necesar
