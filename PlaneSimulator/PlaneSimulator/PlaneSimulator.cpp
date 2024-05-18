@@ -35,7 +35,7 @@
 
 
 // settings
-float timeOfDay = 12.0f; // Time of day in range [0.0, 24.0]
+float timeOfDay = 6.0f; // Time of day in range [0.0, 24.0]
 const float dayDuration = 60.0f; // Duration of a full day-night cycle in seconds
 const unsigned int SCR_WIDTH = 1800;
 const unsigned int SCR_HEIGHT = 1200;
@@ -213,6 +213,7 @@ private:
 	glm::vec3 startPosition;
 	const float MAX_YAW = -60.0f;  // Maximum yaw to the right
 	const float MIN_YAW = -120.0f;
+	const float takeoffSpeed = 1.0f;
 
 public:
 	Camera(const int width, const int height, const glm::vec3& position)
@@ -246,6 +247,10 @@ public:
 	float GetRoll() const
 	{
 		return roll;
+	}
+	float GetTakeoffSpeed() const
+	{
+		return takeoffSpeed;
 	}
 
 	float GetPitch() const
@@ -325,44 +330,56 @@ public:
 		float rotationSpeed = 45.0f * deltaTime;  // Rotation speed factor
 		float movementSpeed = 10.0f * deltaTime;  //
 
-		switch (direction) {
-		case FORWARD:
-			StartFlying();
-			Accelerate(deltaTime);
-			//	position += forward * GetSpeed() * deltaTime;
-			break;
-		case BACKWARD:
-			StopFlying();
-			Decelerate(deltaTime);
-			//	position -= forward * GetSpeed() * deltaTime;
-			break;
-		case LEFT:
-			yaw -= rotationSpeed;  // Rotate left
-			break;
-		case RIGHT:
-			yaw += rotationSpeed;  // Rotate right
-			break;
-		case UP:
-			pitch += rotationSpeed; // Pitch up
-			break;
-		case DOWN:
-			pitch -= rotationSpeed; // Pitch down
-			break;
-		default:
-			break;
+		if (grounded) {
+			switch (direction) {
+			case FORWARD:
+				Accelerate(deltaTime);
+				position += forward * GetSpeed() * deltaTime * 10.0f;
+				break;
+			case BACKWARD:
+				Decelerate(deltaTime);
+				position -= forward * GetSpeed() * deltaTime * 10.0f;
+				break;
+			default:
+				break;
+			}
 		}
-		if (pitch > 89.0f)
-			pitch = 89.0f;
-		if (pitch < -89.0f)
-			pitch = -89.0f;
-		if (yaw > MAX_YAW)
-			yaw = MAX_YAW;
-		if (yaw < MIN_YAW)
-			yaw = MIN_YAW;
-		UpdateCameraVectors();
-
-		position += forward * GetSpeed() * deltaTime * 10.0f;
-
+		else {
+			switch (direction) {
+			case FORWARD:
+				Accelerate(deltaTime);
+				position += forward * GetSpeed() * deltaTime * 10.0f;
+				break;
+			case BACKWARD:
+				Decelerate(deltaTime);
+				position -= forward * GetSpeed() * deltaTime * 10.0f;
+				break;
+			case LEFT:
+				yaw -= rotationSpeed;  // Rotate left
+				break;
+			case RIGHT:
+				yaw += rotationSpeed;  // Rotate right
+				break;
+			case UP:
+				pitch += rotationSpeed; // Pitch up
+				break;
+			case DOWN:
+				pitch -= rotationSpeed; // Pitch down
+				break;
+			default:
+				break;
+			}
+			if (pitch > 89.0f)
+				pitch = 89.0f;
+			if (pitch < -89.0f)
+				pitch = -89.0f;
+			if (yaw > MAX_YAW)
+				yaw = MAX_YAW;
+			if (yaw < MIN_YAW)
+				yaw = MIN_YAW;
+			UpdateCameraVectors();
+			position += forward * GetSpeed() * deltaTime * 10.0f;
+		}
 	}
 
 
@@ -385,8 +402,11 @@ public:
 		xChange *= mouseSensitivity;
 		yChange *= mouseSensitivity;
 
-		yaw += xChange;
-		pitch += yChange;
+		if (!grounded)
+		{
+			yaw += xChange;
+			pitch += yChange;
+		}
 
 		if (pitch > 89.0f)
 			pitch = 89.0f;
@@ -419,10 +439,11 @@ public:
 	glm::vec3 GetUp() const { return up; }
 
 
-
 	void StartFlying() {
 		isFlying = true;
+		grounded = false;
 	}
+
 
 	void UpdateFlight(float deltaTime) {
 		if (isFlying) {
@@ -444,6 +465,16 @@ public:
 			position = newPosition;
 		}
 	}
+	void SetGrounded(bool g) {
+		grounded = g;
+		if (g) {
+			pitch = 0.0f;
+			roll = 0.0f;
+			speed = 0.0f;
+		}
+	}
+
+	bool IsGrounded() const { return grounded; }
 
 	void StopFlying() {
 		isFlying = false;
@@ -508,10 +539,11 @@ protected:
 	bool isPerspective;
 	float roll = 0.0f;  // Roll angle in degrees
 	float speed = 0.01f;       // Viteza curentă a avionului
-	float acceleration = 0.01f; // Accelerarea avionului
-	float maxSpeed = 0.2f;     // Viteza maximă
+	float acceleration = 0.1f; // Accelerarea avionului
+	float maxSpeed = 10.0f;     // Viteza maximă
 	float minSpeed = 0.0f;     // Viteza minimă, poate fi zero pentru a opri complet
-	bool isFlying = false;     // Dacă avionul este în aer sau nu
+	bool isFlying = false; 
+	bool grounded = true;// Dacă avionul este în aer sau nu
 	float pitchIncrement = 0.1f;
 
 	glm::vec3 position;
@@ -593,6 +625,7 @@ float getLightIntensity(float timeOfDay) {
 		return glm::mix(1.0f, 0.1f, t);
 	}
 }
+
 
 
 int main() {
@@ -736,7 +769,7 @@ int main() {
 	glm::vec3 initialPosition(0.0f, 0.0f, 0.0f);
 
 	// Create camera
-	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(0.0f, -15.f, 0.0f));
+	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(-24.0f, -19.f, 0.0f));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1.0f);
 
@@ -782,6 +815,7 @@ int main() {
 
 	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
 
+
 	while (!glfwWindowShouldClose(window)) {
 
 		std::string skyBoxPath = currentPath;
@@ -815,10 +849,15 @@ int main() {
 		pCamera->UpdateFlight(deltaTime); // Actualizează zborul dacă este necesar
 
 		if (pCamera->IsFlying()) {
-			glm::vec3 newVector = pCamera->GetPosition() + pCamera->GetForward() * pCamera->GetSpeed();
+			glm::vec3 newVector = pCamera->GetPosition();
 			if (newVector.y <= initialPositionTerrain.y + 11)
 				newVector.y += 1.0f;
 			pCamera->SetPosition(newVector);
+		}
+		else if (pCamera->IsGrounded()) {
+			glm::vec3 pos = pCamera->GetPosition();
+			pos.y = -19.1f; // Adjust this value based on the ground level
+			pCamera->SetPosition(pos);
 		}
 
 		glEnable(GL_DEPTH_TEST);
@@ -843,20 +882,23 @@ int main() {
 		float pitchAngle = pCamera->GetPitch();
 		float yawAngle = pCamera->GetYaw();
 		glm::vec3 cameraUp = pCamera->GetUp();
-		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.1f, 0.0f, 0.1f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
+		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.0f, -0.1f, 0.0f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
 
 		// render plane
 		renderModel(terrainShader, airplane, airplanePosition, rotationAngles, glm::vec3(0.0005f));
+		renderModel(terrainShader, airplane, glm::vec3(-50.0f, -19.8f, -55.0f), glm::vec3(-90.0f, 0.f, -90.0f), glm::vec3(0.0080f));
 
 		// render turn
-		renderModel(terrainShader, tower, initialPosition + glm::vec3(0.0f, -19.4f, -10.0f), 90.0f, glm::vec3(0.3f));
+		renderModel(terrainShader, tower, initialPosition + glm::vec3(-22.0f, -19.4f, -200.0f), 90.0f, glm::vec3(1.3f));
 
-		renderModel(terrainShader, road, initialPosition + glm::vec3(0.0f, -19.4f, -7.0f), 90.0f, glm::vec3(0.3f));
+		renderModel(terrainShader, road, initialPosition + glm::vec3(45.0f, -19.0f, -7.0f), 90.0f, glm::vec3(0.7f, 0.3f, 1.0f));
 
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-28.0f, -19.4f, -10.0f), 0.0f, glm::vec3(0.3f));
 
 		// render teren
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
+
+		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-55.0f, -19.4f, -55.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.3f));
 
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", glm::vec3(lightIntensity)); // Set light color intensity based on the time of day
@@ -932,10 +974,11 @@ void processInput(GLFWwindow* window) {
 		pCamera->ProcessKeyboard(LEFT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		pCamera->ProcessKeyboard(RIGHT, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ROLL_LEFT, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ROLL_RIGHT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && pCamera->GetSpeed() >= pCamera->GetTakeoffSpeed()) {
+		if (pCamera->IsGrounded()) {
+			pCamera->StartFlying();
+		}
+	}
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
