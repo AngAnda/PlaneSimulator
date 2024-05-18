@@ -211,6 +211,8 @@ private:
 	const float PITCH = 0.0f;
 	const float FOV = 45.0f;
 	glm::vec3 startPosition;
+	const float MAX_YAW = -60.0f;  // Maximum yaw to the right
+	const float MIN_YAW = -120.0f;
 
 public:
 	Camera(const int width, const int height, const glm::vec3& position)
@@ -353,6 +355,10 @@ public:
 			pitch = 89.0f;
 		if (pitch < -89.0f)
 			pitch = -89.0f;
+		if (yaw > MAX_YAW)
+			yaw = MAX_YAW;
+		if (yaw < MIN_YAW)
+			yaw = MIN_YAW;
 		UpdateCameraVectors();
 
 		position += forward * GetSpeed() * deltaTime * 10.0f;
@@ -380,8 +386,18 @@ public:
 		yChange *= mouseSensitivity;
 
 		yaw += xChange;
+		pitch += yChange;
 
-		ProcessMouseMovement(xChange, yChange);
+		if (pitch > 89.0f)
+			pitch = 89.0f;
+		if (pitch < -89.0f)
+			pitch = -89.0f;
+		if (yaw > MAX_YAW)
+			yaw = MAX_YAW;
+		if (yaw < MIN_YAW)
+			yaw = MIN_YAW;
+
+		UpdateCameraVectors();
 	}
 
 	void ProcessMouseScroll(float yOffset)
@@ -423,6 +439,8 @@ public:
 				newPosition.y = 0.0F; // Asigură-te că camera nu coboară sub plan
 			}
 
+
+
 			position = newPosition;
 		}
 	}
@@ -442,7 +460,6 @@ private:
 		yaw += xOffset;
 		pitch += yOffset;
 
-		
 		// Avem grijã sã nu ne dãm peste cap
 		if (constrainPitch) {
 			if (pitch > 89.0f)
@@ -450,6 +467,11 @@ private:
 			if (pitch < -89.0f)
 				pitch = -89.0f;
 		}
+
+		if (yaw > MAX_YAW)
+			yaw = MAX_YAW;
+		if (yaw < MIN_YAW)
+			yaw = MIN_YAW;
 
 		// Se modificã vectorii camerei pe baza unghiurilor Euler
 		UpdateCameraVectors();
