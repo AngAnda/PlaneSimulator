@@ -117,7 +117,6 @@ void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& 
 
 
 
-
 unsigned int CreateTexture(const std::string& strTexturePath)
 {
 	unsigned int textureId = -1;
@@ -565,7 +564,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-Model airplane, tower, skybox, terrain, road, hangare, highFlyingAirplane, highFlyingAirplane2, landingPlane;
+Model airplane, tower, skybox, terrain, road, hangare, highFlyingAirplane, highFlyingAirplane2, landingPlane, cloud;
 
 glm::vec3 getSkyColor(float timeOfDay, std::string& skyboxPath) {
 	glm::vec3 dayColor(0.5f, 0.7f, 1.0f); // Light blue color for the day
@@ -861,6 +860,7 @@ int main() {
 	highFlyingAirplane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	highFlyingAirplane2 = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	landingPlane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
+	cloud = Model(currentPath + "\\Models\\Cloud\\Cloud_Polygon_Blender_1.obj");
 
 	unsigned int terrainTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
@@ -978,6 +978,9 @@ int main() {
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
 
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-55.0f, -19.4f, -55.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.3f));
+
+
+		renderModel(terrainShader, cloud, initialPosition + glm::vec3(-100.0f, 60.f, -600.0f), 0.0f, glm::vec3(10.1f));
 
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", glm::vec3(lightIntensity)); // Set light color intensity based on the time of day
@@ -1150,5 +1153,6 @@ void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& 
 		}
 	}
 }
+
 
 
