@@ -174,6 +174,13 @@ unsigned int LoadSkybox(std::vector<std::string> faces)
 	return textureID;
 }
 
+struct Cloud {
+	glm::vec3 position;
+	glm::vec3 scale;
+	float rotation;
+	float speed;
+};
+
 class Camera
 {
 private:
@@ -673,7 +680,23 @@ void renderParticles(Shader& shader) {
 }
 
 
+std::vector<Cloud> clouds;
 
+void initClouds(int numClouds, const glm::vec3& areaMin, const glm::vec3& areaMax) {
+	clouds.resize(numClouds);
+	for (auto& cloud : clouds) {
+		cloud.position = glm::vec3(
+			areaMin.x + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (areaMax.x - areaMin.x))),
+			areaMin.y + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (areaMax.y - areaMin.y))),
+			areaMin.z + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (areaMax.z - areaMin.z)))
+		);
+		float scaleFactor = 20.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (30.0f - 20.0f)));
+		cloud.scale = glm::vec3(scaleFactor);
+
+		cloud.rotation = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 360.0f;
+		cloud.speed = 10.1f;
+	}
+}
 
 int main() {
 	// glfw: initialize and configure
@@ -871,6 +894,10 @@ int main() {
 
 	initParticles();
 
+	glm::vec3 cloudAreaMin(-400.0f, 160.0f, -2000.0f);
+	glm::vec3 cloudAreaMax(400.0f, 220.0f, -200.0f);
+	initClouds(100, cloudAreaMin, cloudAreaMax);
+
 	while (!glfwWindowShouldClose(window)) {
 
 		std::string skyBoxPath = currentPath;
@@ -879,6 +906,8 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+
+	
 		updateParticles(deltaTime);	
 		// Update time of day
 		timeOfDay += deltaTime * (24.0f / dayDuration);
@@ -943,6 +972,8 @@ int main() {
 
 		renderParticles(terrainShader);
 
+
+	
 		// render planes
 		renderModel(terrainShader, airplane, airplanePosition, rotationAngles, glm::vec3(0.0005f));
 		renderModel(terrainShader, airplane, glm::vec3(-50.0f, -19.8f, -55.0f), glm::vec3(-90.0f, 0.f, -90.0f), glm::vec3(0.0088f));
@@ -980,7 +1011,13 @@ int main() {
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-55.0f, -19.4f, -55.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.3f));
 
 
-		renderModel(terrainShader, cloud, initialPosition + glm::vec3(-100.0f, 60.f, -600.0f), 0.0f, glm::vec3(10.1f));
+		for (const auto& cloud1 : clouds) {
+			renderModel(terrainShader, cloud, initialPosition + cloud1.position, glm::vec3(0.0f, cloud1.rotation, 0.0f), cloud1.scale);
+		}
+		for (auto& cloud : clouds) {
+			cloud.position.z += cloud.speed * deltaTime;
+		}
+		
 
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", glm::vec3(lightIntensity)); // Set light color intensity based on the time of day
