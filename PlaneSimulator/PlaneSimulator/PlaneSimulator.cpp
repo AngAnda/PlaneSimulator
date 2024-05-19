@@ -115,34 +115,8 @@ void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, 
 void renderModel(Shader& ourShader, Model& ourModel, const glm::vec3& position, const glm::vec3& rotationAngles, const glm::vec3& scale);
 void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& position, const glm::vec3& scale, int terrainTexture);
 
-//
-//GLuint loadCubemap(std::vector<std::string> faces) {
-//	GLuint textureID;
-//	glGenTextures(1, &textureID);
-//	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-//
-//	int width, height, nrChannels;
-//	for (GLuint i = 0; i < faces.size(); i++) {
-//		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-//		if (data) {
-//			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-//				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-//			);
-//			stbi_image_free(data);
-//		}
-//		else {
-//			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
-//			stbi_image_free(data);
-//		}
-//	}
-//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-//
-//	return textureID;
-//}
+
+
 
 unsigned int CreateTexture(const std::string& strTexturePath)
 {
@@ -366,22 +340,29 @@ public:
 			case DOWN:
 				pitch -= rotationSpeed; // Pitch down
 				break;
+			case ROLL_LEFT:
+				roll += rotationSpeed;  // Roll left
+				break;
+			case ROLL_RIGHT:
+				roll -= rotationSpeed;  // Roll right
+				break;
 			default:
 				break;
 			}
 			if (pitch > 89.0f)
 				pitch = 89.0f;
 			if (pitch < -89.0f)
-				pitch = -89.0f;
+				pitch = -89.0f;/*
 			if (yaw > MAX_YAW)
 				yaw = MAX_YAW;
 			if (yaw < MIN_YAW)
-				yaw = MIN_YAW;
+				yaw = MIN_YAW;*/
 			UpdateCameraVectors();
 			position += forward * GetSpeed() * deltaTime * 10.0f;
 		}
 	}
 
+	
 
 	void MouseControl(float xPos, float yPos)
 	{
@@ -521,7 +502,7 @@ private:
 
 		// Apply roll rotation around the forward axis if needed
 		glm::mat4 rollMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(roll), forward);
-		this->right = glm::normalize(glm::vec3(rollMatrix * glm::vec4(this->right, 1.0)));
+		this->right = glm::normalize(glm::vec3(rollMatrix * glm::vec4(this->right, 0.0f)));
 		this->up = glm::normalize(glm::cross(right, forward));
 	}
 
@@ -584,7 +565,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-Model airplane, tower, skybox, terrain, road, hangare;
+Model airplane, tower, skybox, terrain, road, hangare, highFlyingAirplane, highFlyingAirplane2, landingPlane;
 
 glm::vec3 getSkyColor(float timeOfDay, std::string& skyboxPath) {
 	glm::vec3 dayColor(0.5f, 0.7f, 1.0f); // Light blue color for the day
@@ -625,6 +606,73 @@ float getLightIntensity(float timeOfDay) {
 		return glm::mix(1.0f, 0.1f, t);
 	}
 }
+
+
+struct Particle {
+	glm::vec3 position;
+	glm::vec3 velocity;
+	float lifetime;  // Time remaining until the particle is 
+	bool active;     // Whether the particle is active
+};
+
+std::vector<Particle> particles;
+int numParticles = 1000;  // Adjust based on the desired intensity
+
+void initParticles() {
+	for (int i = 0; i < numParticles; ++i) {
+		Particle p;
+		p.position = glm::vec3(rand() % 100 - 50, rand() % 10 + 10, rand() % 100 - 50);  // Random positions within a range
+		p.velocity = glm::vec3(0, -0.1, 0);  // Falling down
+		p.lifetime = rand() % 10 + 5;  // Lasts between 5 to 15 seconds
+		p.active = true;
+		particles.push_back(p);
+	}
+}
+
+
+void updateParticles(float deltaTime) {
+	for (auto& p : particles) {
+		if (!p.active) continue;
+
+		p.position += p.velocity * deltaTime;
+		p.lifetime -= deltaTime;
+
+		if (p.lifetime <= 0) {
+			// Reset particle
+			p.position.y = 10;  // Reset height
+			p.lifetime = rand() % 10 + 5;
+		}
+	}
+}
+
+GLuint sphereVAO;
+int sphereVertexCount;
+
+void renderParticles(Shader& shader) {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glBindVertexArray(sphereVAO);  // Bind the VAO of the sphere
+
+	for (const auto& p : particles) {
+		if (!p.active) continue;
+
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), p.position);
+		model = glm::scale(model, glm::vec3(0.1f));  // Scale to the size of the particle
+
+		shader.use();
+		shader.setMat4("model", model);
+		// O presupunere că avem o lumină și o setăm pe shader
+		shader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+		shader.setVec3("objectColor", glm::vec3(1.0f));  // Presupunem că particulele sunt albe
+
+		glDrawArrays(GL_TRIANGLES, 0, sphereVertexCount);  // Render the sphere
+	}
+
+	glBindVertexArray(0);  // Unbind the VAO to clean up
+	glDisable(GL_BLEND);
+}
+
 
 
 
@@ -769,7 +817,7 @@ int main() {
 	glm::vec3 initialPosition(0.0f, 0.0f, 0.0f);
 
 	// Create camera
-	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(-24.0f, -19.f, 0.0f));
+	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, initialPosition + glm::vec3(-26.0f, -18.f, -4.0f));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1.0f);
 
@@ -810,11 +858,18 @@ int main() {
 	tower = Model(currentPath + "\\Models\\Tower\\Tower_Control.obj");
 	road = Model(currentPath + "\\Models\\Road\\Road.obj");
 	hangare = Model(currentPath + "\\Models\\Hangar\\uploads_files_852157_Shelter_simple.obj");
+	highFlyingAirplane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
+	highFlyingAirplane2 = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
+	landingPlane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 
 	unsigned int terrainTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
 	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
+	glm::vec3 highFlyingAirplanePosition = initialPosition + glm::vec3(-22.0f, 5.4f, -200.0f);
+	glm::vec3 highFlyingAirplanePosition2 = initialPosition + glm::vec3(-26.0f, 8.4f, -200.0f);
+	glm::vec3 landingPLanePosition = highFlyingAirplanePosition + glm::vec3(-22.0f, 5.4f, -190.0f);
 
+	initParticles();
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -824,6 +879,7 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		updateParticles(deltaTime);	
 		// Update time of day
 		timeOfDay += deltaTime * (24.0f / dayDuration);
 		if (timeOfDay > 24.0f) timeOfDay -= 24.0f;
@@ -882,19 +938,42 @@ int main() {
 		float pitchAngle = pCamera->GetPitch();
 		float yawAngle = pCamera->GetYaw();
 		glm::vec3 cameraUp = pCamera->GetUp();
-		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.0f, -0.1f, 0.0f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
+		glm::vec3 airplanePosition = cameraPosition + cameraForward + glm::vec3(0.0f, -0.1f, -0.5f); // distanceFromCamera este distanța la care vrei să plasezi avionul în fața camerei
+	
 
-		// render plane
+		renderParticles(terrainShader);
+
+		// render planes
 		renderModel(terrainShader, airplane, airplanePosition, rotationAngles, glm::vec3(0.0005f));
-		renderModel(terrainShader, airplane, glm::vec3(-50.0f, -19.8f, -55.0f), glm::vec3(-90.0f, 0.f, -90.0f), glm::vec3(0.0080f));
+		renderModel(terrainShader, airplane, glm::vec3(-50.0f, -19.8f, -55.0f), glm::vec3(-90.0f, 0.f, -90.0f), glm::vec3(0.0088f));
+
+		highFlyingAirplanePosition += glm::vec3(deltaTime*2.0f, deltaTime, deltaTime);
+		renderModel(terrainShader, highFlyingAirplane, highFlyingAirplanePosition, glm::vec3(-90.0f, 0.f, -90.0f), glm::vec3(0.005f));
+
+		highFlyingAirplanePosition2 += glm::vec3(-2.0f * deltaTime, deltaTime, 2.0f * deltaTime);
+		renderModel(terrainShader, highFlyingAirplane2, highFlyingAirplanePosition2, glm::vec3(-75.0f, 0.f, 45.0f), glm::vec3(0.0015f));
+		
+		renderModel(terrainShader, landingPlane, landingPLanePosition, glm::vec3(-90.0f, 0.0f, 180.0f), glm::vec3(0.005f));
+		if(landingPLanePosition.y > -19.5f)
+			landingPLanePosition += glm::vec3(0.0f, -0.1f, 1.0f);
+
+		if(landingPLanePosition.y <= -19.5f && landingPLanePosition.z < -45.0f)
+			landingPLanePosition += glm::vec3(0.0f, 0.0f, 0.5f);
+
+		if (landingPLanePosition.y <= -19.5f && landingPLanePosition.z < -40.0f && landingPLanePosition.z > -45.5f)
+			landingPLanePosition += glm::vec3(0.0f, 0.0f, 0.25f);
+
+		if (landingPLanePosition.y <= -19.5f && landingPLanePosition.z < -35.0f  && landingPLanePosition.z > -40.5f)
+			landingPLanePosition += glm::vec3(0.0f, 0.0f, 0.1f);
 
 		// render turn
-		renderModel(terrainShader, tower, initialPosition + glm::vec3(-22.0f, -19.4f, -200.0f), 90.0f, glm::vec3(1.3f));
+		renderModel(terrainShader, tower, initialPosition + glm::vec3(-22.0f, -19.4f, -207.0f), 90.0f, glm::vec3(1.3f));
 
 		renderModel(terrainShader, road, initialPosition + glm::vec3(45.0f, -19.0f, -7.0f), 90.0f, glm::vec3(0.7f, 0.3f, 1.0f));
 
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-28.0f, -19.4f, -10.0f), 0.0f, glm::vec3(0.3f));
 
+		
 		// render teren
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
 
@@ -974,6 +1053,10 @@ void processInput(GLFWwindow* window) {
 		pCamera->ProcessKeyboard(LEFT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		pCamera->ProcessKeyboard(RIGHT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(ROLL_LEFT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(ROLL_RIGHT, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && pCamera->GetSpeed() >= pCamera->GetTakeoffSpeed()) {
 		if (pCamera->IsGrounded()) {
 			pCamera->StartFlying();
@@ -1067,4 +1150,5 @@ void renderTerrain(Shader& terrainShader, Model& terrainModel, const glm::vec3& 
 		}
 	}
 }
+
 
