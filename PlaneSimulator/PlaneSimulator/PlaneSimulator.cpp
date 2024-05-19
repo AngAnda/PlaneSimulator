@@ -573,7 +573,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-Model airplane, tower, skybox, terrain, road, hangare, highFlyingAirplane, highFlyingAirplane2, landingPlane, cloud;
+Model airplane, tower, skybox, terrain, road, hangare, highFlyingAirplane, highFlyingAirplane2, landingPlane, cloud, building;
 
 glm::vec3 getSkyColor(float timeOfDay, std::string& skyboxPath) {
 	glm::vec3 dayColor(0.5f, 0.7f, 1.0f); // Light blue color for the day
@@ -886,13 +886,14 @@ int main() {
 	highFlyingAirplane2 = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	landingPlane = Model(currentPath + "\\Models\\Airplane\\11805_airplane_v2_L2.obj");
 	cloud = Model(currentPath + "\\Models\\Cloud\\Cloud_Polygon_Blender_1.obj");
+	building = Model(currentPath + "\\Models\\Building\\10079_Office Building - Brick_V1_iterations-0.obj");
 
 	unsigned int terrainTexture = CreateTexture(currentPath + "\\Models\\Map\\Map.jpg");
 
 	glm::vec3 initialPositionTerrain = initialPosition + glm::vec3(10.0f, -30.0f, 0.0f);
 	glm::vec3 highFlyingAirplanePosition = initialPosition + glm::vec3(-22.0f, 5.4f, -200.0f);
 	glm::vec3 highFlyingAirplanePosition2 = initialPosition + glm::vec3(-26.0f, 8.4f, -200.0f);
-	glm::vec3 landingPLanePosition = highFlyingAirplanePosition + glm::vec3(-22.0f, 5.4f, -190.0f);
+	glm::vec3 landingPLanePosition = highFlyingAirplanePosition + glm::vec3(-14.0f, 5.4f, -150.0f);
 
 	initParticles();
 
@@ -909,7 +910,7 @@ int main() {
 		lastFrame = currentFrame;
 
 		if (pCamera->GetPosition().z < -1400.0f)
-			pCamera->SetPosition(glm::vec3(0, 0, 1400.0f));
+			pCamera->SetPosition(glm::vec3(0, 20, 1400.0f));
 	
 		updateParticles(deltaTime);	
 		// Update time of day
@@ -1001,7 +1002,7 @@ int main() {
 			landingPLanePosition += glm::vec3(0.0f, 0.0f, 0.1f);
 
 		// render turn
-		renderModel(terrainShader, tower, initialPosition + glm::vec3(-22.0f, -19.4f, -207.0f), 90.0f, glm::vec3(1.3f));
+		renderModel(terrainShader, tower, initialPosition + glm::vec3(-4.0f, -19.4f, -217.0f), 90.0f, glm::vec3(1.3f));
 
 		renderModel(terrainShader, road, initialPosition + glm::vec3(45.0f, -19.0f, -7.0f), 90.0f, glm::vec3(0.7f, 0.3f, 1.0f));
 
@@ -1009,6 +1010,8 @@ int main() {
 
 		
 		// render teren
+		//renderModel(terrainShader, building, initialPosition + glm::vec3(-22.0f, -19.4f, -207.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.03f));
+		
 		renderTerrain(terrainShader, terrain, initialPositionTerrain + glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01), terrainTexture);
 
 		renderModel(terrainShader, hangare, initialPosition + glm::vec3(-55.0f, -19.4f, -55.0f), glm::vec3(0.0f, 90.0f, 0.0f), glm::vec3(0.3f));
