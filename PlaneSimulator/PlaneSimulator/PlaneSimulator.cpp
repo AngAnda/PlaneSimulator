@@ -258,8 +258,10 @@ public:
 	}
 
 	void Decelerate(float deltaTime) {
-		speed -= acceleration * deltaTime;
-		if (speed < minSpeed) speed = minSpeed;
+		//speed -= acceleration * deltaTime;
+		speed -= 0.05f;
+		//if (speed < minSpeed) speed = minSpeed;
+		if(speed <= 0.0f) speed = 0.0f;
 	}
 
 	float GetSpeed() const { return speed; }
@@ -358,11 +360,11 @@ public:
 			if (pitch > 89.0f)
 				pitch = 89.0f;
 			if (pitch < -89.0f)
-				pitch = -89.0f;/*
+				pitch = -89.0f;
 			if (yaw > MAX_YAW)
 				yaw = MAX_YAW;
 			if (yaw < MIN_YAW)
-				yaw = MIN_YAW;*/
+				yaw = MIN_YAW;
 			UpdateCameraVectors();
 			position += forward * GetSpeed() * deltaTime * 10.0f;
 		}
@@ -906,7 +908,8 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-
+		if (pCamera->GetPosition().z < -1400.0f)
+			pCamera->SetPosition(glm::vec3(0, 0, 1400.0f));
 	
 		updateParticles(deltaTime);	
 		// Update time of day
